@@ -48,7 +48,6 @@ import java.io.Serializable;
 
 import org.threeten.bp.format.DateTimeFormatter;
 import org.threeten.bp.format.DateTimeParseException;
-import org.threeten.bp.jdk8.DefaultInterfaceTemporalAccessor;
 import org.threeten.bp.jdk8.Jdk8Methods;
 import org.threeten.bp.temporal.ChronoField;
 import org.threeten.bp.temporal.ChronoUnit;
@@ -79,8 +78,7 @@ import org.threeten.bp.zone.ZoneRules;
  * This class is immutable and thread-safe.
  */
 public final class OffsetTime
-        extends DefaultInterfaceTemporalAccessor
-        implements Temporal, TemporalAdjuster, Comparable<OffsetTime>, Serializable {
+        implements Temporal, TemporalAdjuster, Comparable<OffsetTime>, Serializable, TemporalAccessor {
 
     /**
      * The minimum supported {@code OffsetTime}, '00:00:00+18:00'.
@@ -437,7 +435,7 @@ public final class OffsetTime
      */
     @Override  // override for Javadoc
     public int get(TemporalField field) {
-        return super.get(field);
+        return Temporal.super.get(field);
     }
 
     /**
@@ -989,7 +987,7 @@ public final class OffsetTime
         } else if (query == TemporalQueries.chronology() || query == TemporalQueries.localDate() || query == TemporalQueries.zoneId()) {
             return null;
         }
-        return super.query(query);
+        return Temporal.super.query(query);
     }
 
     /**

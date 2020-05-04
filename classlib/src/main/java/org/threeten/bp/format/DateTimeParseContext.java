@@ -42,8 +42,8 @@ import org.threeten.bp.ZoneId;
 import org.threeten.bp.chrono.Chronology;
 import org.threeten.bp.chrono.IsoChronology;
 import org.threeten.bp.format.DateTimeFormatterBuilder.ReducedPrinterParser;
-import org.threeten.bp.jdk8.DefaultInterfaceTemporalAccessor;
 import org.threeten.bp.jdk8.Jdk8Methods;
+import org.threeten.bp.temporal.TemporalAccessor;
 import org.threeten.bp.temporal.TemporalField;
 import org.threeten.bp.temporal.TemporalQueries;
 import org.threeten.bp.temporal.TemporalQuery;
@@ -64,7 +64,7 @@ import org.threeten.bp.temporal.UnsupportedTemporalTypeException;
  * Usage of the class is thread-safe within standard parsing as a new instance of this class
  * is automatically created for each parse and parsing is single-threaded
  */
-final class DateTimeParseContext {
+public final class DateTimeParseContext {
 
     /**
      * The locale, not null.
@@ -110,7 +110,7 @@ final class DateTimeParseContext {
     }
 
     // for testing
-    DateTimeParseContext(Locale locale, DecimalStyle symbols, Chronology chronology) {
+    public DateTimeParseContext(Locale locale, DecimalStyle symbols, Chronology chronology) {
         super();
         this.locale = locale;
         this.symbols = symbols;
@@ -422,7 +422,7 @@ final class DateTimeParseContext {
     /**
      * Temporary store of parsed data.
      */
-    final class Parsed extends DefaultInterfaceTemporalAccessor {
+    final class Parsed implements TemporalAccessor {
         Chronology chrono = null;
         ZoneId zone = null;
         final Map<TemporalField, Long> fieldValues = new HashMap<TemporalField, Long>();
@@ -472,7 +472,7 @@ final class DateTimeParseContext {
             if (query == TemporalQueries.zoneId() || query == TemporalQueries.zone()) {
                 return (R) zone;
             }
-            return super.query(query);
+            return TemporalAccessor.super.query(query);
         }
 
         /**

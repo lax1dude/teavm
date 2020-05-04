@@ -50,7 +50,6 @@ import java.io.Serializable;
 
 import org.threeten.bp.format.DateTimeFormatter;
 import org.threeten.bp.format.DateTimeParseException;
-import org.threeten.bp.jdk8.DefaultInterfaceTemporalAccessor;
 import org.threeten.bp.jdk8.Jdk8Methods;
 import org.threeten.bp.temporal.ChronoField;
 import org.threeten.bp.temporal.ChronoUnit;
@@ -155,8 +154,7 @@ import org.threeten.bp.temporal.ValueRange;
  * This class is immutable and thread-safe.
  */
 public final class Instant
-        extends DefaultInterfaceTemporalAccessor
-        implements Temporal, TemporalAdjuster, Comparable<Instant>, Serializable {
+        implements Temporal, TemporalAdjuster, Comparable<Instant>, Serializable, TemporalAccessor {
 
     /**
      * Constant for the 1970-01-01T00:00:00Z epoch instant.
@@ -459,7 +457,7 @@ public final class Instant
      */
     @Override  // override for Javadoc
     public ValueRange range(TemporalField field) {
-        return super.range(field);
+        return Temporal.super.range(field);
     }
 
     /**

@@ -1,6 +1,21 @@
 /*
- * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
+ *  Copyright 2020 Alexey Andreev.
  *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
+ * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
+*
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,39 +44,19 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.threeten.bp.jdk8;
-
-import org.threeten.bp.temporal.Temporal;
-import org.threeten.bp.temporal.TemporalAccessor;
-import org.threeten.bp.temporal.TemporalAdjuster;
-import org.threeten.bp.temporal.TemporalAmount;
-import org.threeten.bp.temporal.TemporalUnit;
+package org.teavm.classlib.java.time;
 
 /**
- * A temporary class providing implementations that will become default interface
- * methods once integrated into JDK 8.
+ * Base test class.
  */
-public abstract class DefaultInterfaceTemporal
-        implements Temporal, TemporalAccessor {
-
-    @Override
-    public Temporal with(TemporalAdjuster adjuster) {
-        return adjuster.adjustInto(this);
+public abstract class AbstractTest {
+    protected static boolean isIsoLeap(long year) {
+        if (year % 4 != 0) {
+            return false;
+        }
+        if (year % 100 == 0 && year % 400 != 0) {
+            return false;
+        }
+        return true;
     }
-
-    @Override
-    public Temporal plus(TemporalAmount amount) {
-        return amount.addTo(this);
-    }
-
-    @Override
-    public Temporal minus(TemporalAmount amount) {
-        return amount.subtractFrom(this);
-    }
-
-    @Override
-    public Temporal minus(long amountToSubtract, TemporalUnit unit) {
-        return (amountToSubtract == Long.MIN_VALUE ? plus(Long.MAX_VALUE, unit).plus(1, unit) : plus(-amountToSubtract, unit));
-    }
-
 }

@@ -46,7 +46,6 @@ import org.threeten.bp.chrono.IsoChronology;
 import org.threeten.bp.format.DateTimeFormatter;
 import org.threeten.bp.format.DateTimeFormatterBuilder;
 import org.threeten.bp.format.DateTimeParseException;
-import org.threeten.bp.jdk8.DefaultInterfaceTemporalAccessor;
 import org.threeten.bp.jdk8.Jdk8Methods;
 import org.threeten.bp.temporal.ChronoField;
 import org.threeten.bp.temporal.Temporal;
@@ -88,7 +87,6 @@ import org.threeten.bp.temporal.ValueRange;
  * This class is immutable and thread-safe.
  */
 public final class MonthDay
-        extends DefaultInterfaceTemporalAccessor
         implements TemporalAccessor, TemporalAdjuster, Comparable<MonthDay>, Serializable {
 
     /**
@@ -356,7 +354,7 @@ public final class MonthDay
         } else if (field == DAY_OF_MONTH) {
             return ValueRange.of(1, getMonth().minLength(), getMonth().maxLength());
         }
-        return super.range(field);
+        return TemporalAccessor.super.range(field);
     }
 
     /**
@@ -562,7 +560,7 @@ public final class MonthDay
         if (query == TemporalQueries.chronology()) {
             return (R) IsoChronology.INSTANCE;
         }
-        return super.query(query);
+        return TemporalAccessor.super.query(query);
     }
 
     /**

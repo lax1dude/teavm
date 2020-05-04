@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -121,7 +136,15 @@ public interface TemporalAccessor {
      * @return the range of valid values for the field, not null
      * @throws DateTimeException if the range for the field cannot be obtained
      */
-    ValueRange range(TemporalField field);
+    default ValueRange range(TemporalField field) {
+        if (field instanceof ChronoField) {
+            if (isSupported(field)) {
+                return field.range();
+            }
+            throw new UnsupportedTemporalTypeException("Unsupported field: " + field);
+        }
+        return field.rangeRefinedBy(this);
+    }
 
     /**
      * Gets the value of the specified field as an {@code int}.
@@ -150,7 +173,9 @@ public interface TemporalAccessor {
      * @throws DateTimeException if the value is outside the range of valid values for the field
      * @throws ArithmeticException if numeric overflow occurs
      */
-    int get(TemporalField field);
+    default int get(TemporalField field) {
+        return range(field).checkValidIntValue(getLong(field), field);
+    }
 
     /**
      * Gets the value of the specified field as a {@code long}.
@@ -213,6 +238,10 @@ public interface TemporalAccessor {
      * @throws DateTimeException if unable to query
      * @throws ArithmeticException if numeric overflow occurs
      */
-    <R> R query(TemporalQuery<R> query);
-
+    default <R> R query(TemporalQuery<R> query) {
+        if (query == TemporalQueries.zoneId() || query == TemporalQueries.chronology() || query == TemporalQueries.precision()) {
+            return null;
+        }
+        return query.queryFrom(this);
+    }
 }

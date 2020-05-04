@@ -68,7 +68,6 @@ import org.threeten.bp.chrono.ChronoLocalDateTime;
 import org.threeten.bp.chrono.ChronoZonedDateTime;
 import org.threeten.bp.chrono.Chronology;
 import org.threeten.bp.chrono.IsoChronology;
-import org.threeten.bp.jdk8.DefaultInterfaceTemporalAccessor;
 import org.threeten.bp.jdk8.Jdk8Methods;
 import org.threeten.bp.temporal.ChronoField;
 import org.threeten.bp.temporal.TemporalAccessor;
@@ -92,8 +91,7 @@ import org.threeten.bp.temporal.TemporalQuery;
  * This class is mutable and not thread-safe.
  * It should only be used from a single thread.
  */
-final class DateTimeBuilder
-        extends DefaultInterfaceTemporalAccessor
+public final class DateTimeBuilder
         implements TemporalAccessor, Cloneable {
 
     /**

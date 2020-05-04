@@ -41,6 +41,7 @@ import org.threeten.bp.format.TextStyle;
 import org.threeten.bp.temporal.ChronoField;
 import org.threeten.bp.temporal.ChronoUnit;
 import org.threeten.bp.temporal.Temporal;
+import org.threeten.bp.temporal.TemporalAccessor;
 import org.threeten.bp.temporal.TemporalField;
 import org.threeten.bp.temporal.TemporalQueries;
 import org.threeten.bp.temporal.TemporalQuery;
@@ -53,8 +54,7 @@ import org.threeten.bp.temporal.UnsupportedTemporalTypeException;
  * @param  the chronology of this era
  */
 public abstract class DefaultInterfaceEra
-        extends DefaultInterfaceTemporalAccessor
-        implements Era {
+        implements Era, TemporalAccessor {
 
     //-----------------------------------------------------------------------
     @Override

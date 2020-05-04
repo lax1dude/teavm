@@ -49,7 +49,6 @@ import java.io.Serializable;
 
 import org.threeten.bp.format.DateTimeFormatter;
 import org.threeten.bp.format.DateTimeParseException;
-import org.threeten.bp.jdk8.DefaultInterfaceTemporalAccessor;
 import org.threeten.bp.jdk8.Jdk8Methods;
 import org.threeten.bp.temporal.ChronoField;
 import org.threeten.bp.temporal.ChronoUnit;
@@ -86,8 +85,7 @@ import org.threeten.bp.temporal.ValueRange;
  * This class is immutable and thread-safe.
  */
 public final class LocalTime
-        extends DefaultInterfaceTemporalAccessor
-        implements Temporal, TemporalAdjuster, Comparable<LocalTime>, Serializable {
+        implements Temporal, TemporalAdjuster, Comparable<LocalTime>, Serializable, TemporalAccessor {
 
     /**
      * The minimum supported {@code LocalTime}, '00:00'.
@@ -548,7 +546,7 @@ public final class LocalTime
      */
     @Override  // override for Javadoc
     public ValueRange range(TemporalField field) {
-        return super.range(field);
+        return Temporal.super.range(field);
     }
 
     /**
@@ -580,7 +578,7 @@ public final class LocalTime
         if (field instanceof ChronoField) {
             return get0(field);
         }
-        return super.get(field);
+        return Temporal.super.get(field);
     }
 
     /**

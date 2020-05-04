@@ -53,7 +53,6 @@ import org.threeten.bp.format.DateTimeFormatter;
 import org.threeten.bp.format.DateTimeFormatterBuilder;
 import org.threeten.bp.format.DateTimeParseException;
 import org.threeten.bp.format.SignStyle;
-import org.threeten.bp.jdk8.DefaultInterfaceTemporalAccessor;
 import org.threeten.bp.jdk8.Jdk8Methods;
 import org.threeten.bp.temporal.ChronoField;
 import org.threeten.bp.temporal.ChronoUnit;
@@ -96,8 +95,7 @@ import org.threeten.bp.temporal.ValueRange;
  * This class is immutable and thread-safe.
  */
 public final class Year
-        extends DefaultInterfaceTemporalAccessor
-        implements Temporal, TemporalAdjuster, Comparable<Year>, Serializable {
+        implements Temporal, TemporalAdjuster, Comparable<Year>, Serializable, TemporalAccessor {
 
     /**
      * The minimum supported year, '-999,999,999'.
@@ -107,15 +105,6 @@ public final class Year
      * The maximum supported year, '+999,999,999'.
      */
     public static final int MAX_VALUE = 999999999;
-    /**
-     * Simulate JDK 8 method reference Year::from.
-     */
-    public static final TemporalQuery<Year> FROM = new TemporalQuery<Year>() {
-        @Override
-        public Year queryFrom(TemporalAccessor temporal) {
-            return Year.from(temporal);
-        }
-    };
 
     /**
      * Serialization version.
@@ -260,7 +249,7 @@ public final class Year
      */
     public static Year parse(CharSequence text, DateTimeFormatter formatter) {
         Jdk8Methods.requireNonNull(formatter, "formatter");
-        return formatter.parse(text, Year.FROM);
+        return formatter.parse(text, Year::from);
     }
 
     //-------------------------------------------------------------------------
@@ -379,7 +368,7 @@ public final class Year
         if (field == YEAR_OF_ERA) {
             return (year <= 0 ? ValueRange.of(1, MAX_VALUE + 1) : ValueRange.of(1, MAX_VALUE));
         }
-        return super.range(field);
+        return Temporal.super.range(field);
     }
 
     /**
@@ -702,7 +691,7 @@ public final class Year
                 query == TemporalQueries.zone() || query == TemporalQueries.zoneId() || query == TemporalQueries.offset()) {
             return null;
         }
-        return super.query(query);
+        return Temporal.super.query(query);
     }
 
     /**

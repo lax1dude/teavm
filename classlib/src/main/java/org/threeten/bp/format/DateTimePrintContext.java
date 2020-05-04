@@ -43,7 +43,6 @@ import org.threeten.bp.ZoneOffset;
 import org.threeten.bp.chrono.ChronoLocalDate;
 import org.threeten.bp.chrono.Chronology;
 import org.threeten.bp.chrono.IsoChronology;
-import org.threeten.bp.jdk8.DefaultInterfaceTemporalAccessor;
 import org.threeten.bp.jdk8.Jdk8Methods;
 import org.threeten.bp.temporal.ChronoField;
 import org.threeten.bp.temporal.TemporalAccessor;
@@ -62,7 +61,7 @@ import org.threeten.bp.temporal.ValueRange;
  * Usage of the class is thread-safe within standard printing as the framework creates
  * a new instance of the class for each print and printing is single-threaded.
  */
-final class DateTimePrintContext {
+public final class DateTimePrintContext {
 
     /**
      * The temporal being output.
@@ -95,7 +94,7 @@ final class DateTimePrintContext {
     }
 
     // for testing
-    DateTimePrintContext(TemporalAccessor temporal, Locale locale, DecimalStyle symbols) {
+    public DateTimePrintContext(TemporalAccessor temporal, Locale locale, DecimalStyle symbols) {
         this.temporal = temporal;
         this.locale = locale;
         this.symbols = symbols;
@@ -158,7 +157,7 @@ final class DateTimePrintContext {
         }
 
         // need class here to handle non-standard cases
-        return new DefaultInterfaceTemporalAccessor() {
+        return new TemporalAccessor() {
             @Override
             public boolean isSupported(TemporalField field) {
                 if (effectiveDate != null && field.isDateBased()) {

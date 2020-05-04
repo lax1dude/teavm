@@ -44,7 +44,6 @@ import java.util.TimeZone;
 
 import org.threeten.bp.format.DateTimeFormatterBuilder;
 import org.threeten.bp.format.TextStyle;
-import org.threeten.bp.jdk8.DefaultInterfaceTemporalAccessor;
 import org.threeten.bp.jdk8.Jdk8Methods;
 import org.threeten.bp.temporal.TemporalAccessor;
 import org.threeten.bp.temporal.TemporalField;
@@ -472,7 +471,7 @@ public abstract class ZoneId implements Serializable {
      * @return the text value of the zone, not null
      */
     public String getDisplayName(TextStyle style, Locale locale) {
-        return new DateTimeFormatterBuilder().appendZoneText(style).toFormatter(locale).format(new DefaultInterfaceTemporalAccessor() {
+        return new DateTimeFormatterBuilder().appendZoneText(style).toFormatter(locale).format(new TemporalAccessor() {
             @Override
             public boolean isSupported(TemporalField field) {
                 return false;
@@ -487,7 +486,7 @@ public abstract class ZoneId implements Serializable {
                 if (query == TemporalQueries.zoneId()) {
                     return (R) ZoneId.this;
                 }
-                return super.query(query);
+                return TemporalAccessor.super.query(query);
             }
         });
     }

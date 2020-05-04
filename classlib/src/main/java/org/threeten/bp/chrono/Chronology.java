@@ -53,7 +53,6 @@ import org.threeten.bp.ZoneId;
 import org.threeten.bp.format.DateTimeFormatterBuilder;
 import org.threeten.bp.format.ResolverStyle;
 import org.threeten.bp.format.TextStyle;
-import org.threeten.bp.jdk8.DefaultInterfaceTemporalAccessor;
 import org.threeten.bp.jdk8.Jdk8Methods;
 import org.threeten.bp.temporal.ChronoField;
 import org.threeten.bp.temporal.Temporal;
@@ -725,24 +724,25 @@ public abstract class Chronology implements Comparable<Chronology> {
      * @return the text value of the chronology, not null
      */
     public String getDisplayName(TextStyle style, Locale locale) {
-        return new DateTimeFormatterBuilder().appendChronologyText(style).toFormatter(locale).format(new DefaultInterfaceTemporalAccessor() {
-            @Override
-            public boolean isSupported(TemporalField field) {
-                return false;
-            }
-            @Override
-            public long getLong(TemporalField field) {
-                throw new UnsupportedTemporalTypeException("Unsupported field: " + field);
-            }
-            @SuppressWarnings("unchecked")
-            @Override
-            public <R> R query(TemporalQuery<R> query) {
-                if (query == TemporalQueries.chronology()) {
-                    return (R) Chronology.this;
-                }
-                return super.query(query);
-            }
-        });
+        return new DateTimeFormatterBuilder().appendChronologyText(style).toFormatter(locale).format(
+                new TemporalAccessor() {
+                    @Override
+                    public boolean isSupported(TemporalField field) {
+                        return false;
+                    }
+                    @Override
+                    public long getLong(TemporalField field) {
+                        throw new UnsupportedTemporalTypeException("Unsupported field: " + field);
+                    }
+                    @SuppressWarnings("unchecked")
+                    @Override
+                    public <R> R query(TemporalQuery<R> query) {
+                        if (query == TemporalQueries.chronology()) {
+                            return (R) Chronology.this;
+                        }
+                        return TemporalAccessor.super.query(query);
+                    }
+                });
     }
 
     //-----------------------------------------------------------------------

@@ -56,7 +56,6 @@ import org.threeten.bp.format.DateTimeFormatter;
 import org.threeten.bp.format.DateTimeFormatterBuilder;
 import org.threeten.bp.format.DateTimeParseException;
 import org.threeten.bp.format.SignStyle;
-import org.threeten.bp.jdk8.DefaultInterfaceTemporalAccessor;
 import org.threeten.bp.jdk8.Jdk8Methods;
 import org.threeten.bp.temporal.ChronoField;
 import org.threeten.bp.temporal.ChronoUnit;
@@ -92,18 +91,7 @@ import org.threeten.bp.temporal.ValueRange;
  * This class is immutable and thread-safe.
  */
 public final class YearMonth
-        extends DefaultInterfaceTemporalAccessor
-        implements Temporal, TemporalAdjuster, Comparable<YearMonth>, Serializable {
-
-    /**
-     * Simulate JDK 8 method reference YearMonth::from.
-     */
-    public static final TemporalQuery<YearMonth> FROM = new TemporalQuery<YearMonth>() {
-        @Override
-        public YearMonth queryFrom(TemporalAccessor temporal) {
-            return YearMonth.from(temporal);
-        }
-    };
+        implements Temporal, TemporalAdjuster, Comparable<YearMonth>, Serializable, TemporalAccessor {
 
     /**
      * Serialization version.
@@ -265,7 +253,7 @@ public final class YearMonth
      */
     public static YearMonth parse(CharSequence text, DateTimeFormatter formatter) {
         Jdk8Methods.requireNonNull(formatter, "formatter");
-        return formatter.parse(text, YearMonth.FROM);
+        return formatter.parse(text, YearMonth::from);
     }
 
     //-----------------------------------------------------------------------
@@ -368,7 +356,7 @@ public final class YearMonth
         if (field == YEAR_OF_ERA) {
             return (getYear() <= 0 ? ValueRange.of(1, Year.MAX_VALUE + 1) : ValueRange.of(1, Year.MAX_VALUE));
         }
-        return super.range(field);
+        return Temporal.super.range(field);
     }
 
     /**
@@ -831,7 +819,7 @@ public final class YearMonth
                 query == TemporalQueries.zone() || query == TemporalQueries.zoneId() || query == TemporalQueries.offset()) {
             return null;
         }
-        return super.query(query);
+        return Temporal.super.query(query);
     }
 
     /**
