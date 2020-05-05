@@ -15,6 +15,14 @@
  */
 package org.teavm.classlib.impl.tz;
 
+import java.time.DayOfWeek;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Month;
+import java.time.ZoneOffset;
+import java.time.zone.ZoneOffsetTransition;
+import java.time.zone.ZoneOffsetTransitionRule;
+import java.time.zone.ZoneRules;
 import java.util.*;
 import org.teavm.classlib.impl.Base46;
 import org.teavm.classlib.impl.CharFlow;
@@ -323,7 +331,7 @@ public class DateTimeZoneBuilder {
             }
             Base46.encodeUnsigned(sb, flags);
             Base46.encodeUnsigned(sb, iMonthOfYear);
-            Base46.encodeUnsigned(sb, iDayOfMonth);
+            Base46.encode(sb, iDayOfMonth);
             if (iDayOfWeek != 0) {
                 Base46.encode(sb, iDayOfWeek);
             }
@@ -350,7 +358,7 @@ public class DateTimeZoneBuilder {
             }
 
             int monthOfYear = Base46.decodeUnsigned(flow);
-            int dayOfMonth = Base46.decodeUnsigned(flow);
+            int dayOfMonth = Base46.decode(flow);
             int dayOfWeek = hasDayOfWeek ? Base46.decode(flow) : 0;
             int millisOfDay = (int) StorableDateTimeZone.readUnsignedTime(flow);
             return new OfYear(mode, monthOfYear, dayOfMonth, dayOfWeek, advance, millisOfDay);
@@ -1065,6 +1073,11 @@ public class DateTimeZoneBuilder {
             Recurrence endRecurrence = Recurrence.read(flow);
             return new DSTZone(id, standardOffset, startRecurrence, endRecurrence);
         }
+
+        @Override
+        public ZoneRules asZoneRules() {
+            return null;
+        }
     }
 
     static final class PrecalculatedZone extends StorableDateTimeZone {
@@ -1349,6 +1362,86 @@ public class DateTimeZoneBuilder {
             }
 
             return false;
+        }
+
+        @Override
+        public ZoneRules asZoneRules() {
+            List<ZoneOffsetTransition> standardTransitions = new ArrayList<>();
+            List<ZoneOffsetTransition> transitions = new ArrayList<>();
+            ZoneOffset firstStandardOffset = ZoneOffset.ofTotalSeconds(iStandardOffsets[0] / 1000);
+            ZoneOffset firstOffset = ZoneOffset.ofTotalSeconds(iWallOffsets[0] / 1000);
+            ZoneOffset lastStandardOffset = firstStandardOffset;
+            ZoneOffset lastOffset = firstOffset;
+
+            for (int i = 1; i < iTransitions.length; ++i) {
+                long time = iTransitions[i];
+                LocalDateTime transitionTime = LocalDateTime.ofEpochSecond(time / 1000,
+                        (int) (time % 1000) * 1000000, ZoneOffset.UTC);
+                if (iStandardOffsets[i] != iStandardOffsets[i - 1]) {
+                    ZoneOffset offset = ZoneOffset.ofTotalSeconds(iStandardOffsets[i] / 1000);
+                    standardTransitions.add(ZoneOffsetTransition.of(transitionTime, lastStandardOffset, offset));
+                    lastStandardOffset = offset;
+                }
+                if (iWallOffsets[i] != iWallOffsets[i - 1]) {
+                    ZoneOffset offset = ZoneOffset.ofTotalSeconds(iWallOffsets[i] / 1000);
+                    transitions.add(ZoneOffsetTransition.of(transitionTime, lastOffset, offset));
+                    lastOffset = offset;
+                }
+            }
+
+            List<ZoneOffsetTransitionRule> lastRules;
+            if (iTailZone != null) {
+                ZoneOffset tailStandardOffset = ZoneOffset.ofTotalSeconds(iTailZone.iStandardOffset / 1000);
+                ZoneOffset tailOffset = ZoneOffset.ofTotalSeconds(iTailZone.iStartRecurrence.iSaveMillis / 1000);
+                ZoneOffsetTransitionRule firstRule = createRule(iTailZone.iStartRecurrence.iOfYear, tailStandardOffset,
+                        lastOffset, tailOffset);
+                lastOffset = tailOffset;
+                tailOffset = ZoneOffset.ofTotalSeconds(iTailZone.iEndRecurrence.iSaveMillis / 1000);
+                ZoneOffsetTransitionRule lastRule = createRule(iTailZone.iEndRecurrence.iOfYear, tailStandardOffset,
+                        lastOffset, tailOffset);
+                lastRules = Arrays.asList(firstRule, lastRule);
+            } else {
+                lastRules = Collections.emptyList();
+            }
+
+            return ZoneRules.of(firstStandardOffset, firstOffset, standardTransitions, transitions, lastRules);
+        }
+
+        private ZoneOffsetTransitionRule createRule(OfYear ofYear, ZoneOffset standardOffset,
+                ZoneOffset offsetBefore, ZoneOffset offsetAfter) {
+            int millisOfDay = ofYear.iMillisOfDay;
+            boolean midnight = false;
+            if (millisOfDay == 24 * 60 * 60 * 1000) {
+                millisOfDay = 0;
+                midnight = true;
+            }
+
+            ZoneOffsetTransitionRule.TimeDefinition mode;
+            switch (ofYear.iMode) {
+                case 'u':
+                    mode = ZoneOffsetTransitionRule.TimeDefinition.UTC;
+                    break;
+                case 'w':
+                    mode = ZoneOffsetTransitionRule.TimeDefinition.WALL;
+                    break;
+                case 's':
+                    mode = ZoneOffsetTransitionRule.TimeDefinition.STANDARD;
+                    break;
+                default:
+                    throw new IllegalArgumentException();
+            }
+
+            return ZoneOffsetTransitionRule.of(
+                    Month.of(ofYear.iMonthOfYear),
+                    ofYear.iDayOfMonth,
+                    ofYear.iDayOfWeek != 0 ? DayOfWeek.of(ofYear.iDayOfWeek) : null,
+                    LocalTime.ofSecondOfDay(millisOfDay / 1000),
+                    midnight,
+                    mode,
+                    standardOffset,
+                    offsetBefore,
+                    offsetAfter
+            );
         }
     }
 

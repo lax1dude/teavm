@@ -18,6 +18,11 @@ package org.teavm.dependency;
 import com.carrotsearch.hppc.ObjectArrayList;
 import com.carrotsearch.hppc.ObjectObjectHashMap;
 import com.carrotsearch.hppc.cursors.ObjectCursor;
+import java.time.ZoneId;
+import java.time.zone.ZoneOffsetTransition;
+import java.time.zone.ZoneOffsetTransitionRule;
+import java.time.zone.ZoneRules;
+import java.time.zone.ZoneRulesProvider;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -545,5 +550,12 @@ public class DependencyNode implements ValueDependencyInfo {
         }
 
         return visited;
+    }
+
+    public static void main(String[] args) {
+        ZoneRules rules = ZoneId.of("Europe/Paris").getRules();
+        for (ZoneOffsetTransition rule : rules.getTransitions()) {
+            System.out.println(rule);
+        }
     }
 }

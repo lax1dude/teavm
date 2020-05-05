@@ -112,20 +112,6 @@ public final class LocalDateTime
      * This could be used by an application as a "far future" date-time.
      */
     public static final LocalDateTime MAX = LocalDateTime.of(LocalDate.MAX, LocalTime.MAX);
-    /**
-     * Simulate JDK 8 method reference LocalDateTime::from.
-     */
-    public static final TemporalQuery<LocalDateTime> FROM = new TemporalQuery<LocalDateTime>() {
-        @Override
-        public LocalDateTime queryFrom(TemporalAccessor temporal) {
-            return LocalDateTime.from(temporal);
-        }
-    };
-
-    /**
-     * Serialization version.
-     */
-    private static final long serialVersionUID = 6207766400415563566L;
 
     /**
      * The date part.
@@ -441,7 +427,7 @@ public final class LocalDateTime
      */
     public static LocalDateTime parse(CharSequence text, DateTimeFormatter formatter) {
         Jdk8Methods.requireNonNull(formatter, "formatter");
-        return formatter.parse(text, LocalDateTime.FROM);
+        return formatter.parse(text, LocalDateTime::from);
     }
 
     //-----------------------------------------------------------------------
