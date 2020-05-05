@@ -31,7 +31,11 @@
  */
 package org.threeten.bp.zone;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -73,11 +77,11 @@ public abstract class ZoneRulesProvider {
     /**
      * The set of loaded providers.
      */
-    private static final CopyOnWriteArrayList<ZoneRulesProvider> PROVIDERS = new CopyOnWriteArrayList<ZoneRulesProvider>();
+    private static final List<ZoneRulesProvider> PROVIDERS = new ArrayList<>();
     /**
      * The lookup from zone region ID to provider.
      */
-    private static final ConcurrentMap<String, ZoneRulesProvider> ZONES = new ConcurrentHashMap<String, ZoneRulesProvider>(512, 0.75f, 2);
+    private static final Map<String, ZoneRulesProvider> ZONES = new HashMap<>();
     static {
         ZoneRulesInitializer.initialize();
     }

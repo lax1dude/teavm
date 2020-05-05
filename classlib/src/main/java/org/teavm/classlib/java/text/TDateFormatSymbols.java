@@ -33,7 +33,6 @@ public class TDateFormatSymbols implements TSerializable, TCloneable {
     String[] weekdays;
     String[][] zoneStrings;
 
-
     public TDateFormatSymbols() {
         this(TLocale.getDefault());
     }
@@ -234,5 +233,9 @@ public class TDateFormatSymbols implements TSerializable, TCloneable {
 
     public void setZoneStrings(String[][] data) {
         zoneStrings = data.clone();
+    }
+
+    public static TDateFormatSymbols getInstance(TLocale locale) {
+        return new TDateFormatSymbols(locale);
     }
 }
