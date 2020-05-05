@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -31,19 +46,15 @@
  */
 package org.threeten.bp.zone;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
+import java.util.Objects;
 import org.threeten.bp.Duration;
 import org.threeten.bp.Instant;
 import org.threeten.bp.LocalDateTime;
 import org.threeten.bp.ZoneOffset;
-import org.threeten.bp.jdk8.Jdk8Methods;
 
 /**
  * A transition between two offsets caused by a discontinuity in the local time-line.
@@ -99,9 +110,9 @@ public final class ZoneOffsetTransition
      *         are equal, or {@code transition.getNano()} returns non-zero value
      */
     public static ZoneOffsetTransition of(LocalDateTime transition, ZoneOffset offsetBefore, ZoneOffset offsetAfter) {
-        Jdk8Methods.requireNonNull(transition, "transition");
-        Jdk8Methods.requireNonNull(offsetBefore, "offsetBefore");
-        Jdk8Methods.requireNonNull(offsetAfter, "offsetAfter");
+        Objects.requireNonNull(transition, "transition");
+        Objects.requireNonNull(offsetBefore, "offsetBefore");
+        Objects.requireNonNull(offsetAfter, "offsetAfter");
         if (offsetBefore.equals(offsetAfter)) {
             throw new IllegalArgumentException("Offsets must not be equal");
         }
@@ -135,45 +146,6 @@ public final class ZoneOffsetTransition
         this.transition = LocalDateTime.ofEpochSecond(epochSecond, 0, offsetBefore);
         this.offsetBefore = offsetBefore;
         this.offsetAfter = offsetAfter;
-    }
-
-    //-----------------------------------------------------------------------
-    /**
-     * Uses a serialization delegate.
-     *
-     * @return the replacing object, not null
-     */
-    private Object writeReplace() {
-        return new Ser(Ser.ZOT, this);
-    }
-
-    /**
-     * Writes the state to the stream.
-     *
-     * @param out  the output stream, not null
-     * @throws IOException if an error occurs
-     */
-    void writeExternal(DataOutput out) throws IOException {
-        Ser.writeEpochSec(toEpochSecond(), out);
-        Ser.writeOffset(offsetBefore, out);
-        Ser.writeOffset(offsetAfter, out);
-    }
-
-    /**
-     * Reads the state from the stream.
-     *
-     * @param in  the input stream, not null
-     * @return the created object, not null
-     * @throws IOException if an error occurs
-     */
-    static ZoneOffsetTransition readExternal(DataInput in) throws IOException {
-        long epochSecond = Ser.readEpochSec(in);
-        ZoneOffset before = Ser.readOffset(in);
-        ZoneOffset after = Ser.readOffset(in);
-        if (before.equals(after)) {
-            throw new IllegalArgumentException("Offsets must not be equal");
-        }
-        return new ZoneOffsetTransition(epochSecond, before, after);
     }
 
     //-----------------------------------------------------------------------
@@ -361,8 +333,8 @@ public final class ZoneOffsetTransition
         }
         if (other instanceof ZoneOffsetTransition) {
             ZoneOffsetTransition d = (ZoneOffsetTransition) other;
-            return transition.equals(d.transition) &&
-                offsetBefore.equals(d.offsetBefore) && offsetAfter.equals(d.offsetAfter);
+            return transition.equals(d.transition)
+                    && offsetBefore.equals(d.offsetBefore) && offsetAfter.equals(d.offsetAfter);
         }
         return false;
     }

@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -31,24 +46,17 @@
  */
 package org.threeten.bp.chrono;
 
-import static org.threeten.bp.temporal.ChronoField.DAY_OF_MONTH;
-import static org.threeten.bp.temporal.ChronoField.MONTH_OF_YEAR;
-import static org.threeten.bp.temporal.ChronoField.YEAR;
-
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.Calendar;
-
+import java.util.Objects;
 import org.threeten.bp.Clock;
 import org.threeten.bp.DateTimeException;
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.LocalTime;
 import org.threeten.bp.Period;
 import org.threeten.bp.ZoneId;
-import org.threeten.bp.jdk8.Jdk8Methods;
 import org.threeten.bp.temporal.ChronoField;
 import org.threeten.bp.temporal.TemporalAccessor;
 import org.threeten.bp.temporal.TemporalAdjuster;
@@ -181,7 +189,7 @@ public final class JapaneseDate
      *  or if the day-of-month is invalid for the month-year
      */
     public static JapaneseDate of(JapaneseEra era, int yearOfEra, int month, int dayOfMonth) {
-        Jdk8Methods.requireNonNull(era, "era");
+        Objects.requireNonNull(era, "era");
         if (yearOfEra < 1) {
             throw new DateTimeException("Invalid YearOfEra: " + yearOfEra);
         }
@@ -211,7 +219,7 @@ public final class JapaneseDate
      *  or if the day-of-year is invalid for the year
      */
     static JapaneseDate ofYearDay(JapaneseEra era, int yearOfEra, int dayOfYear) {
-        Jdk8Methods.requireNonNull(era, "era");
+        Objects.requireNonNull(era, "era");
         if (yearOfEra < 1) {
             throw new DateTimeException("Invalid YearOfEra: " + yearOfEra);
         }
@@ -375,10 +383,10 @@ public final class JapaneseDate
      */
     @Override
     public boolean isSupported(TemporalField field) {
-        if (field == ChronoField.ALIGNED_DAY_OF_WEEK_IN_MONTH ||
-                field == ChronoField.ALIGNED_DAY_OF_WEEK_IN_YEAR ||
-                field == ChronoField.ALIGNED_WEEK_OF_MONTH ||
-                field == ChronoField.ALIGNED_WEEK_OF_YEAR) {
+        if (field == ChronoField.ALIGNED_DAY_OF_WEEK_IN_MONTH
+                || field == ChronoField.ALIGNED_DAY_OF_WEEK_IN_YEAR
+                || field == ChronoField.ALIGNED_WEEK_OF_MONTH
+                || field == ChronoField.ALIGNED_WEEK_OF_YEAR) {
             return false;
         }
         return super.isSupported(field);
@@ -546,13 +554,13 @@ public final class JapaneseDate
     }
 
     private JapaneseDate with(LocalDate newDate) {
-        return (newDate.equals(isoDate) ? this : new JapaneseDate(newDate));
+        return newDate.equals(isoDate) ? this : new JapaneseDate(newDate);
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public final ChronoLocalDateTime<JapaneseDate> atTime(LocalTime localTime) {
-        return (ChronoLocalDateTime<JapaneseDate>)super.atTime(localTime);
+    public ChronoLocalDateTime<JapaneseDate> atTime(LocalTime localTime) {
+        return (ChronoLocalDateTime<JapaneseDate>) super.atTime(localTime);
     }
 
     @Override
@@ -583,25 +591,4 @@ public final class JapaneseDate
     public int hashCode() {
         return getChronology().getId().hashCode() ^ isoDate.hashCode();
     }
-
-    //-----------------------------------------------------------------------
-    private Object writeReplace() {
-        return new Ser(Ser.JAPANESE_DATE_TYPE, this);
-    }
-
-    void writeExternal(DataOutput out) throws IOException {
-        // JapaneseChrono is implicit in the JAPANESE_DATE_TYPE
-        out.writeInt(get(YEAR));
-        out.writeByte(get(MONTH_OF_YEAR));
-        out.writeByte(get(DAY_OF_MONTH));
-    }
-
-    static ChronoLocalDate readExternal(DataInput in) throws IOException {
-        int year = in.readInt();
-        int month = in.readByte();
-        int dayOfMonth = in.readByte();
-        return JapaneseChronology.INSTANCE.date(year, month, dayOfMonth);
-    }
-
-
 }

@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -31,11 +46,19 @@
  */
 package org.threeten.bp.chrono;
 
+import static org.threeten.bp.temporal.ChronoField.ERA;
 import java.util.Locale;
-
+import org.threeten.bp.format.DateTimeFormatterBuilder;
 import org.threeten.bp.format.TextStyle;
+import org.threeten.bp.temporal.ChronoField;
+import org.threeten.bp.temporal.ChronoUnit;
+import org.threeten.bp.temporal.Temporal;
 import org.threeten.bp.temporal.TemporalAccessor;
 import org.threeten.bp.temporal.TemporalAdjuster;
+import org.threeten.bp.temporal.TemporalField;
+import org.threeten.bp.temporal.TemporalQueries;
+import org.threeten.bp.temporal.TemporalQuery;
+import org.threeten.bp.temporal.UnsupportedTemporalTypeException;
 
 /**
  * An era of the time-line.
@@ -59,6 +82,52 @@ import org.threeten.bp.temporal.TemporalAdjuster;
  * It is recommended to use an enum whenever possible.
  */
 public interface Era extends TemporalAccessor, TemporalAdjuster {
+    @Override
+    default boolean isSupported(TemporalField field) {
+        if (field instanceof ChronoField) {
+            return field == ERA;
+        }
+        return field != null && field.isSupportedBy(this);
+    }
+
+    @Override
+    default int get(TemporalField field) {
+        if (field == ERA) {
+            return getValue();
+        }
+        return range(field).checkValidIntValue(getLong(field), field);
+    }
+
+    @Override
+    default long getLong(TemporalField field) {
+        if (field == ERA) {
+            return getValue();
+        } else if (field instanceof ChronoField) {
+            throw new UnsupportedTemporalTypeException("Unsupported field: " + field);
+        }
+        return field.getFrom(this);
+    }
+
+
+    @SuppressWarnings("unchecked")
+    @Override
+    default  <R> R query(TemporalQuery<R> query) {
+        if (query == TemporalQueries.precision()) {
+            return (R) ChronoUnit.ERAS;
+        }
+        if (query == TemporalQueries.chronology() || query == TemporalQueries.zone()
+                || query == TemporalQueries.zoneId() || query == TemporalQueries.offset()
+                || query == TemporalQueries.localDate() || query == TemporalQueries.localTime()) {
+            return null;
+        }
+        return query.queryFrom(this);
+    }
+
+    //-------------------------------------------------------------------------
+    @Override
+    default Temporal adjustInto(Temporal temporal) {
+        return temporal.with(ERA, getValue());
+    }
 
     /**
      * Gets the numeric value associated with the era as defined by the chronology.
@@ -90,6 +159,8 @@ public interface Era extends TemporalAccessor, TemporalAdjuster {
      * @param locale  the locale to use, not null
      * @return the text value of the era, not null
      */
-    String getDisplayName(TextStyle style, Locale locale);
+    default String getDisplayName(TextStyle style, Locale locale) {
+        return new DateTimeFormatterBuilder().appendText(ERA, style).toFormatter(locale).format(this);
+    }
 
 }

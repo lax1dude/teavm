@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -34,14 +49,13 @@ package org.threeten.bp;
 import static org.threeten.bp.temporal.ChronoUnit.DAYS;
 import static org.threeten.bp.temporal.ChronoUnit.MONTHS;
 import static org.threeten.bp.temporal.ChronoUnit.YEARS;
-
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.threeten.bp.chrono.ChronoLocalDate;
 import org.threeten.bp.chrono.ChronoPeriod;
 import org.threeten.bp.chrono.Chronology;
@@ -97,14 +111,11 @@ public final class Period
      */
     public static final Period ZERO = new Period(0, 0, 0);
     /**
-     * Serialization version.
-     */
-    private static final long serialVersionUID = -8290556941213247973L;
-    /**
      * The pattern for parsing.
      */
     private final static Pattern PATTERN =
-            Pattern.compile("([-+]?)P(?:([-+]?[0-9]+)Y)?(?:([-+]?[0-9]+)M)?(?:([-+]?[0-9]+)W)?(?:([-+]?[0-9]+)D)?", Pattern.CASE_INSENSITIVE);
+            Pattern.compile("([-+]?)P(?:([-+]?[0-9]+)Y)?(?:([-+]?[0-9]+)M)?(?:([-+]?[0-9]+)W)?(?:([-+]?[0-9]+)D)?",
+                    Pattern.CASE_INSENSITIVE);
 
     /**
      * The number of years.
@@ -212,11 +223,11 @@ public final class Period
             return (Period) amount;
         }
         if (amount instanceof ChronoPeriod) {
-            if (IsoChronology.INSTANCE.equals(((ChronoPeriod) amount).getChronology()) == false) {
+            if (!IsoChronology.INSTANCE.equals(((ChronoPeriod) amount).getChronology())) {
                 throw new DateTimeException("Period requires ISO chronology: " + amount);
             }
         }
-        Jdk8Methods.requireNonNull(amount, "amount");
+        Objects.requireNonNull(amount, "amount");
         int years = 0;
         int months = 0;
         int days = 0;
@@ -300,10 +311,10 @@ public final class Period
      * @throws DateTimeParseException if the text cannot be parsed to a period
      */
     public static Period parse(CharSequence text) {
-        Jdk8Methods.requireNonNull(text, "text");
+        Objects.requireNonNull(text, "text");
         Matcher matcher = PATTERN.matcher(text);
         if (matcher.matches()) {
-            int negate = ("-".equals(matcher.group(1)) ? -1 : 1);
+            int negate = "-".equals(matcher.group(1)) ? -1 : 1;
             String yearMatch = matcher.group(2);
             String monthMatch = matcher.group(3);
             String weekMatch = matcher.group(4);
@@ -317,7 +328,7 @@ public final class Period
                     days = Jdk8Methods.safeAdd(days, Jdk8Methods.safeMultiply(weeks, 7));
                     return create(years, months, days);
                 } catch (NumberFormatException ex) {
-                    throw (DateTimeParseException) new DateTimeParseException("Text cannot be parsed to a Period", text, 0).initCause(ex);
+                    throw new DateTimeParseException("Text cannot be parsed to a Period", text, 0, ex);
                 }
             }
         }
@@ -332,7 +343,7 @@ public final class Period
         try {
             return Jdk8Methods.safeMultiply(val, negate);
         } catch (ArithmeticException ex) {
-            throw (DateTimeParseException) new DateTimeParseException("Text cannot be parsed to a Period", text, 0).initCause(ex);
+            throw new DateTimeParseException("Text cannot be parsed to a Period", text, 0, ex);
         }
     }
 
@@ -379,7 +390,7 @@ public final class Period
     //-----------------------------------------------------------------------
     @Override
     public List<TemporalUnit> getUnits() {
-        return Collections.<TemporalUnit>unmodifiableList(Arrays.asList(YEARS, MONTHS, DAYS));
+        return Collections.unmodifiableList(Arrays.asList(YEARS, MONTHS, DAYS));
     }
 
     @Override
@@ -409,8 +420,9 @@ public final class Period
      *
      * @return true if this period is zero-length
      */
+    @Override
     public boolean isZero() {
-        return (this == ZERO);
+        return this == ZERO;
     }
 
     /**
@@ -420,6 +432,7 @@ public final class Period
      *
      * @return true if any unit of this period is negative
      */
+    @Override
     public boolean isNegative() {
         return years < 0 || months < 0 || days < 0;
     }
@@ -545,6 +558,7 @@ public final class Period
      * @return a {@code Period} based on this period with the requested period added, not null
      * @throws ArithmeticException if numeric overflow occurs
      */
+    @Override
     public Period plus(TemporalAmount amountToAdd) {
         Period amount = Period.from(amountToAdd);
         return create(
@@ -629,6 +643,7 @@ public final class Period
      * @return a {@code Period} based on this period with the requested period subtracted, not null
      * @throws ArithmeticException if numeric overflow occurs
      */
+    @Override
     public Period minus(TemporalAmount amountToSubtract) {
         Period amount = Period.from(amountToSubtract);
         return create(
@@ -651,7 +666,9 @@ public final class Period
      * @throws ArithmeticException if numeric overflow occurs
      */
     public Period minusYears(long yearsToSubtract) {
-        return (yearsToSubtract == Long.MIN_VALUE ? plusYears(Long.MAX_VALUE).plusYears(1) : plusYears(-yearsToSubtract));
+        return yearsToSubtract == Long.MIN_VALUE
+                ? plusYears(Long.MAX_VALUE).plusYears(1)
+                : plusYears(-yearsToSubtract);
     }
 
     /**
@@ -668,7 +685,9 @@ public final class Period
      * @throws ArithmeticException if numeric overflow occurs
      */
     public Period minusMonths(long monthsToSubtract) {
-        return (monthsToSubtract == Long.MIN_VALUE ? plusMonths(Long.MAX_VALUE).plusMonths(1) : plusMonths(-monthsToSubtract));
+        return monthsToSubtract == Long.MIN_VALUE
+                ? plusMonths(Long.MAX_VALUE).plusMonths(1)
+                : plusMonths(-monthsToSubtract);
     }
 
     /**
@@ -685,7 +704,9 @@ public final class Period
      * @throws ArithmeticException if numeric overflow occurs
      */
     public Period minusDays(long daysToSubtract) {
-        return (daysToSubtract == Long.MIN_VALUE ? plusDays(Long.MAX_VALUE).plusDays(1) : plusDays(-daysToSubtract));
+        return daysToSubtract == Long.MIN_VALUE
+                ? plusDays(Long.MAX_VALUE).plusDays(1)
+                : plusDays(-daysToSubtract);
     }
 
     //-----------------------------------------------------------------------
@@ -700,6 +721,7 @@ public final class Period
      * @return a {@code Period} based on this period with the amounts multiplied by the scalar, not null
      * @throws ArithmeticException if numeric overflow occurs
      */
+    @Override
     public Period multipliedBy(int scalar) {
         if (this == ZERO || scalar == 1) {
             return this;
@@ -716,6 +738,7 @@ public final class Period
      * @return a {@code Period} based on this period with the amounts negated, not null
      * @throws ArithmeticException if numeric overflow occurs
      */
+    @Override
     public Period negated() {
         return multipliedBy(-1);
     }
@@ -741,6 +764,7 @@ public final class Period
      * @return a {@code Period} based on this period with excess months normalized to years, not null
      * @throws ArithmeticException if numeric overflow occurs
      */
+    @Override
     public Period normalized() {
         long totalMonths = toTotalMonths();
         long splitYears = totalMonths / 12;
@@ -796,7 +820,7 @@ public final class Period
      */
     @Override
     public Temporal addTo(Temporal temporal) {
-        Jdk8Methods.requireNonNull(temporal, "temporal");
+        Objects.requireNonNull(temporal, "temporal");
         if (years != 0) {
             if (months != 0) {
                 temporal = temporal.plus(toTotalMonths(), MONTHS);
@@ -846,7 +870,7 @@ public final class Period
      */
     @Override
     public Temporal subtractFrom(Temporal temporal) {
-        Jdk8Methods.requireNonNull(temporal, "temporal");
+        Objects.requireNonNull(temporal, "temporal");
         if (years != 0) {
             if (months != 0) {
                 temporal = temporal.minus(toTotalMonths(), MONTHS);
@@ -881,9 +905,7 @@ public final class Period
         }
         if (obj instanceof Period) {
             Period other = (Period) obj;
-            return years == other.years &&
-                    months == other.months &&
-                    days == other.days;
+            return years == other.years && months == other.months && days == other.days;
         }
         return false;
     }

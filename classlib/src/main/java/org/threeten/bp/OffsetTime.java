@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -38,17 +53,10 @@ import static org.threeten.bp.LocalTime.SECONDS_PER_DAY;
 import static org.threeten.bp.temporal.ChronoField.NANO_OF_DAY;
 import static org.threeten.bp.temporal.ChronoField.OFFSET_SECONDS;
 import static org.threeten.bp.temporal.ChronoUnit.NANOS;
-
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.io.InvalidObjectException;
-import java.io.ObjectStreamException;
 import java.io.Serializable;
-
+import java.util.Objects;
 import org.threeten.bp.format.DateTimeFormatter;
 import org.threeten.bp.format.DateTimeParseException;
-import org.threeten.bp.jdk8.Jdk8Methods;
 import org.threeten.bp.temporal.ChronoField;
 import org.threeten.bp.temporal.ChronoUnit;
 import org.threeten.bp.temporal.Temporal;
@@ -167,7 +175,7 @@ public final class OffsetTime
      * @return the current time, not null
      */
     public static OffsetTime now(Clock clock) {
-        Jdk8Methods.requireNonNull(clock, "clock");
+        Objects.requireNonNull(clock, "clock");
         final Instant now = clock.instant();  // called once
         return ofInstant(now, clock.getZone().getRules().getOffset(now));
     }
@@ -224,8 +232,8 @@ public final class OffsetTime
      * @return the offset time, not null
      */
     public static OffsetTime ofInstant(Instant instant, ZoneId zone) {
-        Jdk8Methods.requireNonNull(instant, "instant");
-        Jdk8Methods.requireNonNull(zone, "zone");
+        Objects.requireNonNull(instant, "instant");
+        Objects.requireNonNull(zone, "zone");
         ZoneRules rules = zone.getRules();
         ZoneOffset offset = rules.getOffset(instant);
         long secsOfDay = instant.getEpochSecond() % SECONDS_PER_DAY;
@@ -262,8 +270,8 @@ public final class OffsetTime
             ZoneOffset offset = ZoneOffset.from(temporal);
             return new OffsetTime(time, offset);
         } catch (DateTimeException ex) {
-            throw new DateTimeException("Unable to obtain OffsetTime from TemporalAccessor: " +
-                    temporal + ", type " + temporal.getClass().getName());
+            throw new DateTimeException("Unable to obtain OffsetTime from TemporalAccessor: "
+                    + temporal + ", type " + temporal.getClass().getName());
         }
     }
 
@@ -293,7 +301,7 @@ public final class OffsetTime
      * @throws DateTimeParseException if the text cannot be parsed
      */
     public static OffsetTime parse(CharSequence text, DateTimeFormatter formatter) {
-        Jdk8Methods.requireNonNull(formatter, "formatter");
+        Objects.requireNonNull(formatter, "formatter");
         return formatter.parse(text, OffsetTime.FROM);
     }
 
@@ -305,8 +313,8 @@ public final class OffsetTime
      * @param offset  the zone offset, not null
      */
     private OffsetTime(LocalTime time, ZoneOffset offset) {
-        this.time = Jdk8Methods.requireNonNull(time, "time");
-        this.offset = Jdk8Methods.requireNonNull(offset, "offset");
+        this.time = Objects.requireNonNull(time, "time");
+        this.offset = Objects.requireNonNull(offset, "offset");
     }
 
     /**
@@ -878,7 +886,8 @@ public final class OffsetTime
      * Returns a copy of this time with the specified period subtracted.
      * <p>
      * This method returns a new time based on this time with the specified period subtracted.
-     * This can be used to subtract any period that is defined by a unit, for example to subtract hours, minutes or seconds.
+     * This can be used to subtract any period that is defined by a unit, for example to subtract hours,
+     * minutes or seconds.
      * The unit is responsible for the details of the calculation, including the resolution
      * of any edge cases in the calculation.
      * The offset is not part of the calculation and will be unchanged in the result.
@@ -892,7 +901,9 @@ public final class OffsetTime
      */
     @Override
     public OffsetTime minus(long amountToSubtract, TemporalUnit unit) {
-        return (amountToSubtract == Long.MIN_VALUE ? plus(Long.MAX_VALUE, unit).plus(1, unit) : plus(-amountToSubtract, unit));
+        return amountToSubtract == Long.MIN_VALUE
+                ? plus(Long.MAX_VALUE, unit).plus(1, unit)
+                : plus(-amountToSubtract, unit);
     }
 
     //-----------------------------------------------------------------------
@@ -984,7 +995,8 @@ public final class OffsetTime
             return (R) getOffset();
         } else if (query == TemporalQueries.localTime()) {
             return (R) time;
-        } else if (query == TemporalQueries.chronology() || query == TemporalQueries.localDate() || query == TemporalQueries.zoneId()) {
+        } else if (query == TemporalQueries.chronology() || query == TemporalQueries.localDate()
+                || query == TemporalQueries.zoneId()) {
             return null;
         }
         return Temporal.super.query(query);
@@ -1160,7 +1172,7 @@ public final class OffsetTime
         if (offset.equals(other.offset)) {
             return time.compareTo(other.time);
         }
-        int compare = Jdk8Methods.compareLongs(toEpochNano(), other.toEpochNano());
+        int compare = Long.compare(toEpochNano(), other.toEpochNano());
         if (compare == 0) {
             compare = time.compareTo(other.time);
         }
@@ -1282,33 +1294,7 @@ public final class OffsetTime
      * @throws DateTimeException if an error occurs during printing
      */
     public String format(DateTimeFormatter formatter) {
-        Jdk8Methods.requireNonNull(formatter, "formatter");
+        Objects.requireNonNull(formatter, "formatter");
         return formatter.format(this);
     }
-
-    // -----------------------------------------------------------------------
-    private Object writeReplace() {
-        return new Ser(Ser.OFFSET_TIME_TYPE, this);
-    }
-
-    /**
-     * Defend against malicious streams.
-     * @return never
-     * @throws InvalidObjectException always
-     */
-    private Object readResolve() throws ObjectStreamException {
-        throw new InvalidObjectException("Deserialization via serialization delegate");
-    }
-
-    void writeExternal(DataOutput out) throws IOException {
-        time.writeExternal(out);
-        offset.writeExternal(out);
-    }
-
-    static OffsetTime readExternal(DataInput in) throws IOException {
-        LocalTime time = LocalTime.readExternal(in);
-        ZoneOffset offset = ZoneOffset.readExternal(in);
-        return OffsetTime.of(time, offset);
-    }
-
 }

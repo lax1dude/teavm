@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -32,9 +47,8 @@
 package org.threeten.bp.chrono;
 
 import java.util.List;
-
+import java.util.Objects;
 import org.threeten.bp.DateTimeException;
-import org.threeten.bp.jdk8.Jdk8Methods;
 import org.threeten.bp.temporal.ChronoUnit;
 import org.threeten.bp.temporal.Temporal;
 import org.threeten.bp.temporal.TemporalAmount;
@@ -86,8 +100,8 @@ public abstract class ChronoPeriod
      * @see ChronoLocalDate#until(ChronoLocalDate)
      */
     public static ChronoPeriod between(ChronoLocalDate startDateInclusive, ChronoLocalDate endDateExclusive) {
-        Jdk8Methods.requireNonNull(startDateInclusive, "startDateInclusive");
-        Jdk8Methods.requireNonNull(endDateExclusive, "endDateExclusive");
+        Objects.requireNonNull(startDateInclusive, "startDateInclusive");
+        Objects.requireNonNull(endDateExclusive, "endDateExclusive");
         return startDateInclusive.until(endDateExclusive);
     }
 

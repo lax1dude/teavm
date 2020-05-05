@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -34,9 +49,8 @@ package org.threeten.bp.chrono;
 import static org.threeten.bp.temporal.ChronoField.EPOCH_DAY;
 import static org.threeten.bp.temporal.ChronoField.NANO_OF_DAY;
 import static org.threeten.bp.temporal.ChronoUnit.NANOS;
-
 import java.util.Comparator;
-
+import java.util.Objects;
 import org.threeten.bp.DateTimeException;
 import org.threeten.bp.Instant;
 import org.threeten.bp.LocalDate;
@@ -45,8 +59,6 @@ import org.threeten.bp.LocalTime;
 import org.threeten.bp.ZoneId;
 import org.threeten.bp.ZoneOffset;
 import org.threeten.bp.format.DateTimeFormatter;
-import org.threeten.bp.jdk8.DefaultInterfaceTemporal;
-import org.threeten.bp.jdk8.Jdk8Methods;
 import org.threeten.bp.temporal.ChronoField;
 import org.threeten.bp.temporal.Temporal;
 import org.threeten.bp.temporal.TemporalAccessor;
@@ -91,7 +103,6 @@ import org.threeten.bp.zone.ZoneRules;
  * @param <D> the date type
  */
 public abstract class ChronoLocalDateTime<D extends ChronoLocalDate>
-        extends DefaultInterfaceTemporal
         implements Temporal, TemporalAdjuster, Comparable<ChronoLocalDateTime<?>> {
 
     /**
@@ -113,16 +124,8 @@ public abstract class ChronoLocalDateTime<D extends ChronoLocalDate>
         return DATE_TIME_COMPARATOR;
     }
     private static final Comparator<ChronoLocalDateTime<?>> DATE_TIME_COMPARATOR =
-            new Comparator<ChronoLocalDateTime<?>>() {
-        @Override
-        public int compare(ChronoLocalDateTime<?> datetime1, ChronoLocalDateTime<?> datetime2) {
-            int cmp = Jdk8Methods.compareLongs(datetime1.toLocalDate().toEpochDay(), datetime2.toLocalDate().toEpochDay());
-            if (cmp == 0) {
-                cmp = Jdk8Methods.compareLongs(datetime1.toLocalTime().toNanoOfDay(), datetime2.toLocalTime().toNanoOfDay());
-            }
-            return cmp;
-        }
-    };
+            Comparator.comparingLong((ChronoLocalDateTime<?> datetime) -> datetime.toLocalDate().toEpochDay())
+                    .thenComparingLong(datetime -> datetime.toLocalTime().toNanoOfDay());
 
     //-----------------------------------------------------------------------
     /**
@@ -147,7 +150,7 @@ public abstract class ChronoLocalDateTime<D extends ChronoLocalDate>
      * @see Chronology#localDateTime(TemporalAccessor)
      */
     public static ChronoLocalDateTime<?> from(TemporalAccessor temporal) {
-        Jdk8Methods.requireNonNull(temporal, "temporal");
+        Objects.requireNonNull(temporal, "temporal");
         if (temporal instanceof ChronoLocalDateTime) {
             return (ChronoLocalDateTime<?>) temporal;
         }
@@ -179,7 +182,7 @@ public abstract class ChronoLocalDateTime<D extends ChronoLocalDate>
      *
      * @return the date part of this date-time, not null
      */
-    public abstract D toLocalDate() ;
+    public abstract D toLocalDate();
 
     /**
      * Gets the local time part of this date-time.
@@ -195,7 +198,7 @@ public abstract class ChronoLocalDateTime<D extends ChronoLocalDate>
     // override for covariant return type
     @Override
     public ChronoLocalDateTime<D> with(TemporalAdjuster adjuster) {
-        return toLocalDate().getChronology().ensureChronoLocalDateTime(super.with(adjuster));
+        return toLocalDate().getChronology().ensureChronoLocalDateTime(Temporal.super.with(adjuster));
     }
 
     @Override
@@ -203,7 +206,7 @@ public abstract class ChronoLocalDateTime<D extends ChronoLocalDate>
 
     @Override
     public ChronoLocalDateTime<D> plus(TemporalAmount amount) {
-        return toLocalDate().getChronology().ensureChronoLocalDateTime(super.plus(amount));
+        return toLocalDate().getChronology().ensureChronoLocalDateTime(Temporal.super.plus(amount));
     }
 
     @Override
@@ -211,12 +214,12 @@ public abstract class ChronoLocalDateTime<D extends ChronoLocalDate>
 
     @Override
     public ChronoLocalDateTime<D> minus(TemporalAmount amount) {
-        return toLocalDate().getChronology().ensureChronoLocalDateTime(super.minus(amount));
+        return toLocalDate().getChronology().ensureChronoLocalDateTime(Temporal.super.minus(amount));
     }
 
     @Override
     public ChronoLocalDateTime<D> minus(long amountToSubtract, TemporalUnit unit) {
-        return toLocalDate().getChronology().ensureChronoLocalDateTime(super.minus(amountToSubtract, unit));
+        return toLocalDate().getChronology().ensureChronoLocalDateTime(Temporal.super.minus(amountToSubtract, unit));
     }
 
     //-----------------------------------------------------------------------
@@ -231,10 +234,11 @@ public abstract class ChronoLocalDateTime<D extends ChronoLocalDate>
             return (R) LocalDate.ofEpochDay(toLocalDate().toEpochDay());
         } else if (query == TemporalQueries.localTime()) {
             return (R) toLocalTime();
-        } else if (query == TemporalQueries.zone() || query == TemporalQueries.zoneId() || query == TemporalQueries.offset()) {
+        } else if (query == TemporalQueries.zone() || query == TemporalQueries.zoneId()
+                || query == TemporalQueries.offset()) {
             return null;
         }
-        return super.query(query);
+        return Temporal.super.query(query);
     }
 
     @Override
@@ -259,7 +263,7 @@ public abstract class ChronoLocalDateTime<D extends ChronoLocalDate>
      * @throws DateTimeException if an error occurs during printing
      */
     public String format(DateTimeFormatter formatter) {
-        Jdk8Methods.requireNonNull(formatter, "formatter");
+        Objects.requireNonNull(formatter, "formatter");
         return formatter.format(this);
     }
 
@@ -319,7 +323,7 @@ public abstract class ChronoLocalDateTime<D extends ChronoLocalDate>
      * @return the number of seconds from the epoch of 1970-01-01T00:00:00Z
      */
     public long toEpochSecond(ZoneOffset offset) {
-        Jdk8Methods.requireNonNull(offset, "offset");
+        Objects.requireNonNull(offset, "offset");
         long epochDay = toLocalDate().toEpochDay();
         long secs = epochDay * 86400 + toLocalTime().toSecondOfDay();
         secs -= offset.getTotalSeconds();
@@ -377,8 +381,8 @@ public abstract class ChronoLocalDateTime<D extends ChronoLocalDate>
     public boolean isAfter(ChronoLocalDateTime<?> other) {
         long thisEpDay = this.toLocalDate().toEpochDay();
         long otherEpDay = other.toLocalDate().toEpochDay();
-        return thisEpDay > otherEpDay ||
-            (thisEpDay == otherEpDay && this.toLocalTime().toNanoOfDay() > other.toLocalTime().toNanoOfDay());
+        return thisEpDay > otherEpDay
+                || (thisEpDay == otherEpDay && this.toLocalTime().toNanoOfDay() > other.toLocalTime().toNanoOfDay());
     }
 
     /**
@@ -395,8 +399,8 @@ public abstract class ChronoLocalDateTime<D extends ChronoLocalDate>
     public boolean isBefore(ChronoLocalDateTime<?> other) {
         long thisEpDay = this.toLocalDate().toEpochDay();
         long otherEpDay = other.toLocalDate().toEpochDay();
-        return thisEpDay < otherEpDay ||
-            (thisEpDay == otherEpDay && this.toLocalTime().toNanoOfDay() < other.toLocalTime().toNanoOfDay());
+        return thisEpDay < otherEpDay
+                || (thisEpDay == otherEpDay && this.toLocalTime().toNanoOfDay() < other.toLocalTime().toNanoOfDay());
     }
 
     /**
@@ -412,8 +416,8 @@ public abstract class ChronoLocalDateTime<D extends ChronoLocalDate>
      */
     public boolean isEqual(ChronoLocalDateTime<?> other) {
         // Do the time check first, it is cheaper than computing EPOCH day.
-        return this.toLocalTime().toNanoOfDay() == other.toLocalTime().toNanoOfDay() &&
-               this.toLocalDate().toEpochDay() == other.toLocalDate().toEpochDay();
+        return this.toLocalTime().toNanoOfDay() == other.toLocalTime().toNanoOfDay()
+               && this.toLocalDate().toEpochDay() == other.toLocalDate().toEpochDay();
     }
 
     //-----------------------------------------------------------------------

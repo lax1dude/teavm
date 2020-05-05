@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -36,7 +51,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
+import java.util.Objects;
 import org.threeten.bp.Period;
 import org.threeten.bp.ZoneId;
 import org.threeten.bp.chrono.Chronology;
@@ -223,8 +238,8 @@ public final class DateTimeParseContext {
             for (int i = 0; i < length; i++) {
                 char ch1 = cs1.charAt(offset1 + i);
                 char ch2 = cs2.charAt(offset2 + i);
-                if (ch1 != ch2 && Character.toUpperCase(ch1) != Character.toUpperCase(ch2) &&
-                        Character.toLowerCase(ch1) != Character.toLowerCase(ch2)) {
+                if (ch1 != ch2 && Character.toUpperCase(ch1) != Character.toUpperCase(ch2)
+                        && Character.toLowerCase(ch1) != Character.toLowerCase(ch2)) {
                     return false;
                 }
             }
@@ -255,9 +270,9 @@ public final class DateTimeParseContext {
      * @return true if equal
      */
     static boolean charEqualsIgnoreCase(char c1, char c2) {
-        return c1 == c2 ||
-                Character.toUpperCase(c1) == Character.toUpperCase(c2) ||
-                Character.toLowerCase(c1) == Character.toLowerCase(c2);
+        return c1 == c2
+                || Character.toUpperCase(c1) == Character.toUpperCase(c2)
+                || Character.toLowerCase(c1) == Character.toLowerCase(c2);
     }
 
     //-----------------------------------------------------------------------
@@ -341,7 +356,7 @@ public final class DateTimeParseContext {
      * @return the new position
      */
     int setParsedField(TemporalField field, long value, int errorPos, int successPos) {
-        Jdk8Methods.requireNonNull(field, "field");
+        Objects.requireNonNull(field, "field");
         Long old = currentParsed().fieldValues.put(field, value);
         return (old != null && old.longValue() != value) ? ~errorPos : successPos;
     }
@@ -355,7 +370,7 @@ public final class DateTimeParseContext {
      * @param chrono  the parsed chronology, not null
      */
     void setParsed(Chronology chrono) {
-        Jdk8Methods.requireNonNull(chrono, "chrono");
+        Objects.requireNonNull(chrono, "chrono");
         Parsed currentParsed = currentParsed();
         currentParsed.chrono = chrono;
         if (currentParsed.callbacks != null) {
@@ -368,7 +383,8 @@ public final class DateTimeParseContext {
         }
     }
 
-    void addChronologyChangedParser(ReducedPrinterParser reducedPrinterParser, long value, int errorPos, int successPos) {
+    void addChronologyChangedParser(ReducedPrinterParser reducedPrinterParser, long value, int errorPos,
+            int successPos) {
         Parsed currentParsed = currentParsed();
         if (currentParsed.callbacks == null) {
             currentParsed.callbacks = new ArrayList<Object[]>(2);
@@ -385,7 +401,7 @@ public final class DateTimeParseContext {
      * @param zone  the parsed zone, not null
      */
     void setParsed(ZoneId zone) {
-        Jdk8Methods.requireNonNull(zone, "zone");
+        Objects.requireNonNull(zone, "zone");
         currentParsed().zone = zone;
     }
 
@@ -423,8 +439,8 @@ public final class DateTimeParseContext {
      * Temporary store of parsed data.
      */
     final class Parsed implements TemporalAccessor {
-        Chronology chrono = null;
-        ZoneId zone = null;
+        Chronology chrono;
+        ZoneId zone;
         final Map<TemporalField, Long> fieldValues = new HashMap<TemporalField, Long>();
         boolean leapSecond;
         Period excessDays = Period.ZERO;
@@ -450,7 +466,7 @@ public final class DateTimeParseContext {
         }
         @Override
         public int get(TemporalField field) {
-            if (fieldValues.containsKey(field) == false) {
+            if (!fieldValues.containsKey(field)) {
                 throw new UnsupportedTemporalTypeException("Unsupported field: " + field);
             }
             long value = fieldValues.get(field);
@@ -458,7 +474,7 @@ public final class DateTimeParseContext {
         }
         @Override
         public long getLong(TemporalField field) {
-            if (fieldValues.containsKey(field) == false) {
+            if (!fieldValues.containsKey(field)) {
                 throw new UnsupportedTemporalTypeException("Unsupported field: " + field);
             }
             return fieldValues.get(field);
@@ -513,7 +529,7 @@ public final class DateTimeParseContext {
      * @param locale  the locale, not null
      */
     void setLocale(Locale locale) {
-        Jdk8Methods.requireNonNull(locale, "locale");
+        Objects.requireNonNull(locale, "locale");
         this.locale = locale;
     }
 

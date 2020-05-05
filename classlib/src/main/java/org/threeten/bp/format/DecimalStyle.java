@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -37,9 +52,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-
-import org.threeten.bp.jdk8.Jdk8Methods;
 
 /**
  * Localized symbols used in date and time formatting.
@@ -113,7 +127,7 @@ public final class DecimalStyle {
      * @return the info, not null
      */
     public static DecimalStyle of(Locale locale) {
-        Jdk8Methods.requireNonNull(locale, "locale");
+        Objects.requireNonNull(locale, "locale");
         DecimalStyle info = CACHE.get(locale);
         if (info == null) {
             info = create(locale);
@@ -312,8 +326,8 @@ public final class DecimalStyle {
         }
         if (obj instanceof DecimalStyle) {
             DecimalStyle other = (DecimalStyle) obj;
-            return (zeroDigit == other.zeroDigit && positiveSign == other.positiveSign &&
-                    negativeSign == other.negativeSign && decimalSeparator == other.decimalSeparator);
+            return zeroDigit == other.zeroDigit && positiveSign == other.positiveSign
+                    && negativeSign == other.negativeSign && decimalSeparator == other.decimalSeparator;
         }
         return false;
     }

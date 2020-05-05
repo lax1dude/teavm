@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -46,6 +61,7 @@ import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import org.threeten.bp.DateTimeException;
 import org.threeten.bp.DayOfWeek;
 import org.threeten.bp.Year;
@@ -193,7 +209,7 @@ public final class WeekFields implements Serializable {
      * @return the week-definition, not null
      */
     public static WeekFields of(Locale locale) {
-        Jdk8Methods.requireNonNull(locale, "locale");
+        Objects.requireNonNull(locale, "locale");
         locale = new Locale(locale.getLanguage(), locale.getCountry());  // elminate variants
 
         // obtain these from GregorianCalendar for now
@@ -244,7 +260,7 @@ public final class WeekFields implements Serializable {
      * @throws IllegalArgumentException if the minimal days value is invalid
      */
     private WeekFields(DayOfWeek firstDayOfWeek, int minimalDaysInFirstWeek) {
-        Jdk8Methods.requireNonNull(firstDayOfWeek, "firstDayOfWeek");
+        Objects.requireNonNull(firstDayOfWeek, "firstDayOfWeek");
         if (minimalDaysInFirstWeek < 1 || minimalDaysInFirstWeek > 7) {
             throw new IllegalArgumentException("Minimal number of days is invalid");
         }
@@ -611,7 +627,8 @@ public final class WeekFields implements Serializable {
         private final TemporalUnit rangeUnit;
         private final ValueRange range;
 
-        private ComputedDayOfField(String name, WeekFields weekDef, TemporalUnit baseUnit, TemporalUnit rangeUnit, ValueRange range) {
+        private ComputedDayOfField(String name, WeekFields weekDef, TemporalUnit baseUnit, TemporalUnit rangeUnit,
+                ValueRange range) {
             this.name = name;
             this.weekDef = weekDef;
             this.baseUnit = baseUnit;
@@ -735,7 +752,7 @@ public final class WeekFields implements Serializable {
          * @return the week number where zero is used for a partial week and 1 for the first full week
          */
         private int computeWeek(int offset, int day) {
-            return ((7 + offset + (day - 1)) / 7);
+            return (7 + offset + (day - 1)) / 7;
         }
 
         @SuppressWarnings("unchecked")
@@ -787,13 +804,13 @@ public final class WeekFields implements Serializable {
                 fieldValues.put(DAY_OF_WEEK, (long) isoDow);
                 return null;
             }
-            if (fieldValues.containsKey(DAY_OF_WEEK) == false) {
+            if (!fieldValues.containsKey(DAY_OF_WEEK)) {
                 return null;
             }
             
             // week-based-year
             if (rangeUnit == ChronoUnit.FOREVER) {
-                if (fieldValues.containsKey(weekDef.weekOfWeekBasedYear) == false) {
+                if (!fieldValues.containsKey(weekDef.weekOfWeekBasedYear)) {
                     return null;
                 }
                 Chronology chrono = Chronology.from(partialTemporal);  // defaults to ISO
@@ -828,7 +845,7 @@ public final class WeekFields implements Serializable {
                 return date;
             }
             
-            if (fieldValues.containsKey(YEAR) == false) {
+            if (!fieldValues.containsKey(YEAR)) {
                 return null;
             }
             int isoDow = DAY_OF_WEEK.checkValidIntValue(fieldValues.get(DAY_OF_WEEK));
@@ -836,7 +853,7 @@ public final class WeekFields implements Serializable {
             int year = YEAR.checkValidIntValue(fieldValues.get(YEAR));
             Chronology chrono = Chronology.from(partialTemporal);  // defaults to ISO
             if (rangeUnit == MONTHS) {  // week-of-month
-                if (fieldValues.containsKey(MONTH_OF_YEAR) == false) {
+                if (!fieldValues.containsKey(MONTH_OF_YEAR)) {
                     return null;
                 }
                 final long value = fieldValues.remove(this);
@@ -992,7 +1009,7 @@ public final class WeekFields implements Serializable {
 
         @Override
         public String getDisplayName(Locale locale) {
-            Jdk8Methods.requireNonNull(locale, "locale");
+            Objects.requireNonNull(locale, "locale");
             if (rangeUnit == YEARS) {  // week-of-year
                 return "Week";
             }

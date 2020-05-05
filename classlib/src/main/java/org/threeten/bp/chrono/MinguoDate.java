@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -32,22 +47,15 @@
 package org.threeten.bp.chrono;
 
 import static org.threeten.bp.chrono.MinguoChronology.YEARS_DIFFERENCE;
-import static org.threeten.bp.temporal.ChronoField.DAY_OF_MONTH;
-import static org.threeten.bp.temporal.ChronoField.MONTH_OF_YEAR;
 import static org.threeten.bp.temporal.ChronoField.YEAR;
-
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
 import java.io.Serializable;
-
+import java.util.Objects;
 import org.threeten.bp.Clock;
 import org.threeten.bp.DateTimeException;
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.LocalTime;
 import org.threeten.bp.Period;
 import org.threeten.bp.ZoneId;
-import org.threeten.bp.jdk8.Jdk8Methods;
 import org.threeten.bp.temporal.ChronoField;
 import org.threeten.bp.temporal.TemporalAccessor;
 import org.threeten.bp.temporal.TemporalAdjuster;
@@ -172,10 +180,10 @@ public final class MinguoDate
     /**
      * Creates an instance from an ISO date.
      *
-     * @param isoDate  the standard local date, validated not null
+     * @param date  the standard local date, validated not null
      */
     MinguoDate(LocalDate date) {
-        Jdk8Methods.requireNonNull(date, "date");
+        Objects.requireNonNull(date, "date");
         this.isoDate = date;
     }
 
@@ -207,7 +215,9 @@ public final class MinguoDate
                         return isoDate.range(field);
                     case YEAR_OF_ERA: {
                         ValueRange range = YEAR.range();
-                        long max = (getProlepticYear() <= 0 ? -range.getMinimum() + 1 + YEARS_DIFFERENCE : range.getMaximum() - YEARS_DIFFERENCE);
+                        long max = getProlepticYear() <= 0
+                                ? -range.getMinimum() + 1 + YEARS_DIFFERENCE
+                                : range.getMaximum() - YEARS_DIFFERENCE;
                         return ValueRange.of(1, max);
                     }
                 }
@@ -226,12 +236,12 @@ public final class MinguoDate
                     return getProlepticMonth();
                 case YEAR_OF_ERA: {
                     int prolepticYear = getProlepticYear();
-                    return (prolepticYear >= 1 ? prolepticYear : 1 - prolepticYear);
+                    return prolepticYear >= 1 ? prolepticYear : 1 - prolepticYear;
                 }
                 case YEAR:
                     return getProlepticYear();
                 case ERA:
-                    return (getProlepticYear() >= 1 ? 1 : 0);
+                    return getProlepticYear() >= 1 ? 1 : 0;
             }
             return isoDate.getLong(field);
         }
@@ -269,7 +279,9 @@ public final class MinguoDate
                     int nvalue = getChronology().range(f).checkValidIntValue(newValue, f);
                     switch (f) {
                         case YEAR_OF_ERA:
-                            return with(isoDate.withYear(getProlepticYear() >= 1 ? nvalue + YEARS_DIFFERENCE : (1 - nvalue)  + YEARS_DIFFERENCE));
+                            return with(isoDate.withYear(getProlepticYear() >= 1
+                                    ? nvalue + YEARS_DIFFERENCE
+                                    : (1 - nvalue) + YEARS_DIFFERENCE));
                         case YEAR:
                             return with(isoDate.withYear(nvalue + YEARS_DIFFERENCE));
                         case ERA:
@@ -319,12 +331,12 @@ public final class MinguoDate
     }
 
     private MinguoDate with(LocalDate newDate) {
-        return (newDate.equals(isoDate) ? this : new MinguoDate(newDate));
+        return newDate.equals(isoDate) ? this : new MinguoDate(newDate);
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public final ChronoLocalDateTime<MinguoDate> atTime(LocalTime localTime) {
+    public ChronoLocalDateTime<MinguoDate> atTime(LocalTime localTime) {
         return (ChronoLocalDateTime<MinguoDate>) super.atTime(localTime);
     }
 
@@ -356,26 +368,4 @@ public final class MinguoDate
     public int hashCode() {
         return getChronology().getId().hashCode() ^ isoDate.hashCode();
     }
-
-    //-----------------------------------------------------------------------
-    private Object writeReplace() {
-        return new Ser(Ser.MINGUO_DATE_TYPE, this);
-    }
-
-    void writeExternal(DataOutput out) throws IOException {
-        // MinguoChrono is implicit in the MINGUO_DATE_TYPE
-        out.writeInt(get(YEAR));
-        out.writeByte(get(MONTH_OF_YEAR));
-        out.writeByte(get(DAY_OF_MONTH));
-
-    }
-
-    static ChronoLocalDate readExternal(DataInput in) throws IOException {
-        int year = in.readInt();
-        int month = in.readByte();
-        int dayOfMonth = in.readByte();
-        return MinguoChronology.INSTANCE.date(year, month, dayOfMonth);
-    }
-
-
 }

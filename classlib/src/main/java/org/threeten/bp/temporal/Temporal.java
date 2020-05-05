@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -150,7 +165,9 @@ public interface Temporal extends TemporalAccessor {
      * @throws DateTimeException if unable to make the adjustment
      * @throws ArithmeticException if numeric overflow occurs
      */
-    Temporal with(TemporalAdjuster adjuster);
+    default Temporal with(TemporalAdjuster adjuster) {
+        return adjuster.adjustInto(this);
+    }
 
     /**
      * Returns an object of the same type as this object with the specified field altered.
@@ -213,7 +230,9 @@ public interface Temporal extends TemporalAccessor {
      * @throws DateTimeException if the addition cannot be made
      * @throws ArithmeticException if numeric overflow occurs
      */
-    Temporal plus(TemporalAmount amount);
+    default Temporal plus(TemporalAmount amount) {
+        return amount.addTo(this);
+    }
 
     /**
      * Returns an object of the same type as this object with the specified period added.
@@ -280,7 +299,9 @@ public interface Temporal extends TemporalAccessor {
      * @throws DateTimeException if the subtraction cannot be made
      * @throws ArithmeticException if numeric overflow occurs
      */
-    Temporal minus(TemporalAmount amount);
+    default Temporal minus(TemporalAmount amount) {
+        return amount.subtractFrom(this);
+    }
 
     /**
      * Returns an object of the same type as this object with the specified period subtracted.
@@ -311,7 +332,11 @@ public interface Temporal extends TemporalAccessor {
      * @throws DateTimeException if the unit cannot be subtracted
      * @throws ArithmeticException if numeric overflow occurs
      */
-    Temporal minus(long amountToSubtract, TemporalUnit unit);
+    default Temporal minus(long amountToSubtract, TemporalUnit unit) {
+        return amountToSubtract == Long.MIN_VALUE
+                ? plus(Long.MAX_VALUE, unit).plus(1, unit)
+                : plus(-amountToSubtract, unit);
+    }
 
     //-----------------------------------------------------------------------
     /**

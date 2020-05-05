@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -33,20 +48,13 @@ package org.threeten.bp;
 
 import static org.threeten.bp.temporal.ChronoField.DAY_OF_MONTH;
 import static org.threeten.bp.temporal.ChronoField.MONTH_OF_YEAR;
-
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.io.InvalidObjectException;
-import java.io.ObjectStreamException;
 import java.io.Serializable;
-
+import java.util.Objects;
 import org.threeten.bp.chrono.Chronology;
 import org.threeten.bp.chrono.IsoChronology;
 import org.threeten.bp.format.DateTimeFormatter;
 import org.threeten.bp.format.DateTimeFormatterBuilder;
 import org.threeten.bp.format.DateTimeParseException;
-import org.threeten.bp.jdk8.Jdk8Methods;
 import org.threeten.bp.temporal.ChronoField;
 import org.threeten.bp.temporal.Temporal;
 import org.threeten.bp.temporal.TemporalAccessor;
@@ -88,21 +96,6 @@ import org.threeten.bp.temporal.ValueRange;
  */
 public final class MonthDay
         implements TemporalAccessor, TemporalAdjuster, Comparable<MonthDay>, Serializable {
-
-    /**
-     * Simulate JDK 8 method reference MonthDay::from.
-     */
-    public static final TemporalQuery<MonthDay> FROM = new TemporalQuery<MonthDay>() {
-        @Override
-        public MonthDay queryFrom(TemporalAccessor temporal) {
-            return MonthDay.from(temporal);
-        }
-    };
-
-    /**
-     * Serialization version.
-     */
-    private static final long serialVersionUID = -939150713474957432L;
     /**
      * Parser.
      */
@@ -187,11 +180,11 @@ public final class MonthDay
      * @throws DateTimeException if the day-of-month is invalid for the month
      */
     public static MonthDay of(Month month, int dayOfMonth) {
-        Jdk8Methods.requireNonNull(month, "month");
+        Objects.requireNonNull(month, "month");
         DAY_OF_MONTH.checkValidValue(dayOfMonth);
         if (dayOfMonth > month.maxLength()) {
-            throw new DateTimeException("Illegal value for DayOfMonth field, value " + dayOfMonth +
-                    " is not valid for month " + month.name());
+            throw new DateTimeException("Illegal value for DayOfMonth field, value " + dayOfMonth
+                    + " is not valid for month " + month.name());
         }
         return new MonthDay(month.getValue(), dayOfMonth);
     }
@@ -239,13 +232,13 @@ public final class MonthDay
             return (MonthDay) temporal;
         }
         try {
-            if (IsoChronology.INSTANCE.equals(Chronology.from(temporal)) == false) {
+            if (!IsoChronology.INSTANCE.equals(Chronology.from(temporal))) {
                 temporal = LocalDate.from(temporal);
             }
             return of(temporal.get(MONTH_OF_YEAR), temporal.get(DAY_OF_MONTH));
         } catch (DateTimeException ex) {
-            throw new DateTimeException("Unable to obtain MonthDay from TemporalAccessor: " +
-                    temporal + ", type " + temporal.getClass().getName());
+            throw new DateTimeException("Unable to obtain MonthDay from TemporalAccessor: "
+                    + temporal + ", type " + temporal.getClass().getName());
         }
     }
 
@@ -275,8 +268,8 @@ public final class MonthDay
      * @throws DateTimeParseException if the text cannot be parsed
      */
     public static MonthDay parse(CharSequence text, DateTimeFormatter formatter) {
-        Jdk8Methods.requireNonNull(formatter, "formatter");
-        return formatter.parse(text, MonthDay.FROM);
+        Objects.requireNonNull(formatter, "formatter");
+        return formatter.parse(text, MonthDay::from);
     }
 
     //-----------------------------------------------------------------------
@@ -473,7 +466,7 @@ public final class MonthDay
      * @see Year#isValidMonthDay(MonthDay)
      */
     public boolean isValidYear(int year) {
-        return (day == 29 && month == 2 && Year.isLeap(year) == false) == false;
+        return !(day == 29 && month == 2 && !Year.isLeap(year));
     }
 
     //-----------------------------------------------------------------------
@@ -507,7 +500,7 @@ public final class MonthDay
     * @return a {@code MonthDay} based on this month-day with the requested month, not null
     */
     public MonthDay with(Month month) {
-        Jdk8Methods.requireNonNull(month, "month");
+        Objects.requireNonNull(month, "month");
         if (month.getValue() == this.month) {
             return this;
         }
@@ -592,7 +585,7 @@ public final class MonthDay
      */
     @Override
     public Temporal adjustInto(Temporal temporal) {
-        if (Chronology.from(temporal).equals(IsoChronology.INSTANCE) == false) {
+        if (!Chronology.from(temporal).equals(IsoChronology.INSTANCE)) {
             throw new DateTimeException("Adjustment only supported on ISO date-time");
         }
         temporal = temporal.with(MONTH_OF_YEAR, month);
@@ -628,10 +621,11 @@ public final class MonthDay
      * @param other  the other month-day to compare to, not null
      * @return the comparator value, negative if less, positive if greater
      */
+    @Override
     public int compareTo(MonthDay other) {
-        int cmp = (month - other.month);
+        int cmp = month - other.month;
         if (cmp == 0) {
-            cmp = (day - other.day);
+            cmp = day - other.day;
         }
         return cmp;
     }
@@ -714,33 +708,7 @@ public final class MonthDay
      * @throws DateTimeException if an error occurs during printing
      */
     public String format(DateTimeFormatter formatter) {
-        Jdk8Methods.requireNonNull(formatter, "formatter");
+        Objects.requireNonNull(formatter, "formatter");
         return formatter.format(this);
     }
-
-    //-----------------------------------------------------------------------
-    private Object writeReplace() {
-        return new Ser(Ser.MONTH_DAY_TYPE, this);
-    }
-
-    /**
-     * Defend against malicious streams.
-     * @return never
-     * @throws InvalidObjectException always
-     */
-    private Object readResolve() throws ObjectStreamException {
-        throw new InvalidObjectException("Deserialization via serialization delegate");
-    }
-
-    void writeExternal(DataOutput out) throws IOException {
-        out.writeByte(month);
-        out.writeByte(day);
-    }
-
-    static MonthDay readExternal(DataInput in) throws IOException {
-        byte month = in.readByte();
-        byte day = in.readByte();
-        return MonthDay.of(month, day);
-    }
-
 }

@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -34,12 +49,11 @@ package org.threeten.bp.chrono;
 import static org.threeten.bp.temporal.ChronoUnit.DAYS;
 import static org.threeten.bp.temporal.ChronoUnit.MONTHS;
 import static org.threeten.bp.temporal.ChronoUnit.YEARS;
-
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
+import java.util.Objects;
 import org.threeten.bp.DateTimeException;
 import org.threeten.bp.jdk8.Jdk8Methods;
 import org.threeten.bp.temporal.ChronoField;
@@ -141,7 +155,8 @@ final class ChronoPeriodImpl
     @Override
     public ChronoPeriod normalized() {
         if (chronology.range(ChronoField.MONTH_OF_YEAR).isFixed()) {
-            long monthLength = chronology.range(ChronoField.MONTH_OF_YEAR).getMaximum() - chronology.range(ChronoField.MONTH_OF_YEAR).getMinimum() + 1;
+            long monthLength = chronology.range(ChronoField.MONTH_OF_YEAR).getMaximum()
+                    - chronology.range(ChronoField.MONTH_OF_YEAR).getMinimum() + 1;
             long total = years * monthLength + months;
             int years = Jdk8Methods.safeToInt(total / monthLength);
             int months = Jdk8Methods.safeToInt(total % monthLength);
@@ -152,10 +167,11 @@ final class ChronoPeriodImpl
 
     @Override
     public Temporal addTo(Temporal temporal) {
-        Jdk8Methods.requireNonNull(temporal, "temporal");
+        Objects.requireNonNull(temporal, "temporal");
         Chronology temporalChrono = temporal.query(TemporalQueries.chronology());
-        if (temporalChrono != null && chronology.equals(temporalChrono) == false) {
-            throw new DateTimeException("Invalid chronology, required: " + chronology.getId() + ", but was: " + temporalChrono.getId());
+        if (temporalChrono != null && !chronology.equals(temporalChrono)) {
+            throw new DateTimeException("Invalid chronology, required: " + chronology.getId() + ", but was: "
+                    + temporalChrono.getId());
         }
         if (years != 0) {
             temporal = temporal.plus(years, YEARS);
@@ -171,10 +187,11 @@ final class ChronoPeriodImpl
 
     @Override
     public Temporal subtractFrom(Temporal temporal) {
-        Jdk8Methods.requireNonNull(temporal, "temporal");
+        Objects.requireNonNull(temporal, "temporal");
         Chronology temporalChrono = temporal.query(TemporalQueries.chronology());
-        if (temporalChrono != null && chronology.equals(temporalChrono) == false) {
-            throw new DateTimeException("Invalid chronology, required: " + chronology.getId() + ", but was: " + temporalChrono.getId());
+        if (temporalChrono != null && !chronology.equals(temporalChrono)) {
+            throw new DateTimeException("Invalid chronology, required: " + chronology.getId()
+                    + ", but was: " + temporalChrono.getId());
         }
         if (years != 0) {
             temporal = temporal.minus(years, YEARS);
@@ -196,8 +213,8 @@ final class ChronoPeriodImpl
         }
         if (obj instanceof ChronoPeriodImpl) {
             ChronoPeriodImpl other = (ChronoPeriodImpl) obj;
-            return years == other.years && months == other.months &&
-                    days == other.days && chronology.equals(other.chronology);
+            return years == other.years && months == other.months
+                    && days == other.days && chronology.equals(other.chronology);
         }
         return false;
     }

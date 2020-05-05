@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -32,12 +47,8 @@
 package org.threeten.bp.chrono;
 
 import static org.threeten.bp.temporal.ChronoField.EPOCH_DAY;
-
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.io.Serializable;
-
+import java.util.Objects;
 import org.threeten.bp.LocalTime;
 import org.threeten.bp.ZoneId;
 import org.threeten.bp.jdk8.Jdk8Methods;
@@ -150,8 +161,8 @@ final class ChronoLocalDateTimeImpl<D extends ChronoLocalDate>
      * @param time  the time part of the date-time, not null
      */
     private ChronoLocalDateTimeImpl(D date, LocalTime time) {
-        Jdk8Methods.requireNonNull(date, "date");
-        Jdk8Methods.requireNonNull(time, "time");
+        Objects.requireNonNull(date, "date");
+        Objects.requireNonNull(time, "time");
         this.date = date;
         this.time = time;
     }
@@ -204,7 +215,7 @@ final class ChronoLocalDateTimeImpl<D extends ChronoLocalDate>
     @Override
     public ValueRange range(TemporalField field) {
         if (field instanceof ChronoField) {
-            return (field.isTimeBased() ? time.range(field) : date.range(field));
+            return field.isTimeBased() ? time.range(field) : date.range(field);
         }
         return field.rangeRefinedBy(this);
     }
@@ -212,7 +223,7 @@ final class ChronoLocalDateTimeImpl<D extends ChronoLocalDate>
     @Override
     public int get(TemporalField field) {
         if (field instanceof ChronoField) {
-            return (field.isTimeBased() ? time.get(field) : date.get(field));
+            return field.isTimeBased() ? time.get(field) : date.get(field);
         }
         return range(field).checkValidIntValue(getLong(field), field);
     }
@@ -220,7 +231,7 @@ final class ChronoLocalDateTimeImpl<D extends ChronoLocalDate>
     @Override
     public long getLong(TemporalField field) {
         if (field instanceof ChronoField) {
-            return (field.isTimeBased() ? time.getLong(field) : date.getLong(field));
+            return field.isTimeBased() ? time.getLong(field) : date.getLong(field);
         }
         return field.getFrom(this);
     }
@@ -258,12 +269,16 @@ final class ChronoLocalDateTimeImpl<D extends ChronoLocalDate>
             ChronoUnit f = (ChronoUnit) unit;
             switch (f) {
                 case NANOS: return plusNanos(amountToAdd);
-                case MICROS: return plusDays(amountToAdd / MICROS_PER_DAY).plusNanos((amountToAdd % MICROS_PER_DAY) * 1000);
-                case MILLIS: return plusDays(amountToAdd / MILLIS_PER_DAY).plusNanos((amountToAdd % MILLIS_PER_DAY) * 1000000);
+                case MICROS: return plusDays(amountToAdd / MICROS_PER_DAY)
+                        .plusNanos((amountToAdd % MICROS_PER_DAY) * 1000);
+                case MILLIS: return plusDays(amountToAdd / MILLIS_PER_DAY)
+                        .plusNanos((amountToAdd % MILLIS_PER_DAY) * 1000000);
                 case SECONDS: return plusSeconds(amountToAdd);
                 case MINUTES: return plusMinutes(amountToAdd);
                 case HOURS: return plusHours(amountToAdd);
-                case HALF_DAYS: return plusDays(amountToAdd / 256).plusHours((amountToAdd % 256) * 12);  // no overflow (256 is multiple of 2)
+                case HALF_DAYS:
+                    // no overflow (256 is multiple of 2)
+                    return plusDays(amountToAdd / 256).plusHours((amountToAdd % 256) * 12);
             }
             return with(date.plus(amountToAdd, unit), time);
         }
@@ -308,7 +323,7 @@ final class ChronoLocalDateTimeImpl<D extends ChronoLocalDate>
         totNanos = totNanos + curNoD;                              // total 432000000000000
         totDays += Jdk8Methods.floorDiv(totNanos, NANOS_PER_DAY);
         long newNoD = Jdk8Methods.floorMod(totNanos, NANOS_PER_DAY);
-        LocalTime newTime = (newNoD == curNoD ? time : LocalTime.ofNanoOfDay(newNoD));
+        LocalTime newTime = newNoD == curNoD ? time : LocalTime.ofNanoOfDay(newNoD);
         return with(newDate.plus(totDays, ChronoUnit.DAYS), newTime);
     }
 
@@ -346,21 +361,4 @@ final class ChronoLocalDateTimeImpl<D extends ChronoLocalDate>
         }
         return unit.between(this, end);
     }
-
-    //-----------------------------------------------------------------------
-    private Object writeReplace() {
-        return new Ser(Ser.CHRONO_LOCALDATETIME_TYPE, this);
-    }
-
-    void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(date);
-        out.writeObject(time);
-    }
-
-    static ChronoLocalDateTime<?> readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        ChronoLocalDate date = (ChronoLocalDate) in.readObject();
-        LocalTime time = (LocalTime) in.readObject();
-        return date.atTime(time);
-    }
-
 }

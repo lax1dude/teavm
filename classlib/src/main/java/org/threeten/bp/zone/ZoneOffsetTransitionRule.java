@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -33,12 +48,8 @@ package org.threeten.bp.zone;
 
 import static org.threeten.bp.temporal.TemporalAdjusters.nextOrSame;
 import static org.threeten.bp.temporal.TemporalAdjusters.previousOrSame;
-
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
 import java.io.Serializable;
-
+import java.util.Objects;
 import org.threeten.bp.DayOfWeek;
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.LocalDateTime;
@@ -149,19 +160,21 @@ public final class ZoneOffsetTransitionRule implements Serializable {
             ZoneOffset standardOffset,
             ZoneOffset offsetBefore,
             ZoneOffset offsetAfter) {
-        Jdk8Methods.requireNonNull(month, "month");
-        Jdk8Methods.requireNonNull(time, "time");
-        Jdk8Methods.requireNonNull(timeDefnition, "timeDefnition");
-        Jdk8Methods.requireNonNull(standardOffset, "standardOffset");
-        Jdk8Methods.requireNonNull(offsetBefore, "offsetBefore");
-        Jdk8Methods.requireNonNull(offsetAfter, "offsetAfter");
+        Objects.requireNonNull(month, "month");
+        Objects.requireNonNull(time, "time");
+        Objects.requireNonNull(timeDefnition, "timeDefnition");
+        Objects.requireNonNull(standardOffset, "standardOffset");
+        Objects.requireNonNull(offsetBefore, "offsetBefore");
+        Objects.requireNonNull(offsetAfter, "offsetAfter");
         if (dayOfMonthIndicator < -28 || dayOfMonthIndicator > 31 || dayOfMonthIndicator == 0) {
-            throw new IllegalArgumentException("Day of month indicator must be between -28 and 31 inclusive excluding zero");
+            throw new IllegalArgumentException("Day of month indicator must be between -28 and 31"
+                    + " inclusive excluding zero");
         }
-        if (timeEndOfDay && time.equals(LocalTime.MIDNIGHT) == false) {
+        if (timeEndOfDay && !time.equals(LocalTime.MIDNIGHT)) {
             throw new IllegalArgumentException("Time must be midnight when end of day flag is true");
         }
-        return new ZoneOffsetTransitionRule(month, dayOfMonthIndicator, dayOfWeek, time, timeEndOfDay ? 1 : 0, timeDefnition, standardOffset, offsetBefore, offsetAfter);
+        return new ZoneOffsetTransitionRule(month, dayOfMonthIndicator, dayOfWeek, time, timeEndOfDay ? 1 : 0,
+                timeDefnition, standardOffset, offsetBefore, offsetAfter);
     }
 
     /**
@@ -200,87 +213,6 @@ public final class ZoneOffsetTransitionRule implements Serializable {
         this.standardOffset = standardOffset;
         this.offsetBefore = offsetBefore;
         this.offsetAfter = offsetAfter;
-    }
-
-    //-----------------------------------------------------------------------
-    /**
-     * Uses a serialization delegate.
-     *
-     * @return the replacing object, not null
-     */
-    private Object writeReplace() {
-        return new Ser(Ser.ZOTRULE, this);
-    }
-
-    /**
-     * Writes the state to the stream.
-     *
-     * @param out  the output stream, not null
-     * @throws IOException if an error occurs
-     */
-    void writeExternal(DataOutput out) throws IOException {
-        final int timeSecs = time.toSecondOfDay() + adjustDays * SECS_PER_DAY;
-        final int stdOffset = standardOffset.getTotalSeconds();
-        final int beforeDiff = offsetBefore.getTotalSeconds() - stdOffset;
-        final int afterDiff = offsetAfter.getTotalSeconds() - stdOffset;
-        final int timeByte = (timeSecs % 3600 == 0 && timeSecs <= SECS_PER_DAY ?
-                (timeSecs == SECS_PER_DAY ? 24 : time.getHour()) : 31);
-        final int stdOffsetByte = (stdOffset % 900 == 0 ? stdOffset / 900 + 128 : 255);
-        final int beforeByte = (beforeDiff == 0 || beforeDiff == 1800 || beforeDiff == 3600 ? beforeDiff / 1800 : 3);
-        final int afterByte = (afterDiff == 0 || afterDiff == 1800 || afterDiff == 3600 ? afterDiff / 1800 : 3);
-        final int dowByte = (dow == null ? 0 : dow.getValue());
-        int b = (month.getValue() << 28) +          // 4 bits
-                ((dom + 32) << 22) +                // 6 bits
-                (dowByte << 19) +                   // 3 bits
-                (timeByte << 14) +                  // 5 bits
-                (timeDefinition.ordinal() << 12) +  // 2 bits
-                (stdOffsetByte << 4) +              // 8 bits
-                (beforeByte << 2) +                 // 2 bits
-                afterByte;                          // 2 bits
-        out.writeInt(b);
-        if (timeByte == 31) {
-            out.writeInt(timeSecs);
-        }
-        if (stdOffsetByte == 255) {
-            out.writeInt(stdOffset);
-        }
-        if (beforeByte == 3) {
-            out.writeInt(offsetBefore.getTotalSeconds());
-        }
-        if (afterByte == 3) {
-            out.writeInt(offsetAfter.getTotalSeconds());
-        }
-    }
-
-    /**
-     * Reads the state from the stream.
-     *
-     * @param in  the input stream, not null
-     * @return the created object, not null
-     * @throws IOException if an error occurs
-     */
-    static ZoneOffsetTransitionRule readExternal(DataInput in) throws IOException {
-        int data = in.readInt();
-        Month month = Month.of(data >>> 28);
-        int dom = ((data & (63 << 22)) >>> 22) - 32;
-        int dowByte = (data & (7 << 19)) >>> 19;
-        DayOfWeek dow = dowByte == 0 ? null : DayOfWeek.of(dowByte);
-        int timeByte = (data & (31 << 14)) >>> 14;
-        TimeDefinition defn = TimeDefinition.values()[(data & (3 << 12)) >>> 12];
-        int stdByte = (data & (255 << 4)) >>> 4;
-        int beforeByte = (data & (3 << 2)) >>> 2;
-        int afterByte = (data & 3);
-        int timeOfDaysSecs = (timeByte == 31 ? in.readInt() : timeByte * 3600);
-        ZoneOffset std = (stdByte == 255 ? ZoneOffset.ofTotalSeconds(in.readInt()) : ZoneOffset.ofTotalSeconds((stdByte - 128) * 900));
-        ZoneOffset before = (beforeByte == 3 ? ZoneOffset.ofTotalSeconds(in.readInt()) : ZoneOffset.ofTotalSeconds(std.getTotalSeconds() + beforeByte * 1800));
-        ZoneOffset after = (afterByte == 3 ? ZoneOffset.ofTotalSeconds(in.readInt()) : ZoneOffset.ofTotalSeconds(std.getTotalSeconds() + afterByte * 1800));
-        // only bit of validation that we need to copy from public of() method
-        if (dom < -28 || dom > 31 || dom == 0) {
-            throw new IllegalArgumentException("Day of month indicator must be between -28 and 31 inclusive excluding zero");
-        }
-        LocalTime time = LocalTime.ofSecondOfDay(Jdk8Methods.floorMod(timeOfDaysSecs, SECS_PER_DAY));
-        int adjustDays = Jdk8Methods.floorDiv(timeOfDaysSecs, SECS_PER_DAY);
-        return new ZoneOffsetTransitionRule(month, dom, dow, time, adjustDays, defn, std, before, after);
     }
 
     //-----------------------------------------------------------------------
@@ -441,13 +373,13 @@ public final class ZoneOffsetTransitionRule implements Serializable {
         }
         if (otherRule instanceof ZoneOffsetTransitionRule) {
             ZoneOffsetTransitionRule other = (ZoneOffsetTransitionRule) otherRule;
-            return month == other.month && dom == other.dom && dow == other.dow &&
-                timeDefinition == other.timeDefinition &&
-                adjustDays == other.adjustDays &&
-                time.equals(other.time) &&
-                standardOffset.equals(other.standardOffset) &&
-                offsetBefore.equals(other.offsetBefore) &&
-                offsetAfter.equals(other.offsetAfter);
+            return month == other.month && dom == other.dom && dow == other.dow
+                    && timeDefinition == other.timeDefinition
+                    && adjustDays == other.adjustDays
+                    && time.equals(other.time)
+                    && standardOffset.equals(other.standardOffset)
+                    && offsetBefore.equals(other.offsetBefore)
+                    && offsetAfter.equals(other.offsetAfter);
         }
         return false;
     }
@@ -459,11 +391,10 @@ public final class ZoneOffsetTransitionRule implements Serializable {
      */
     @Override
     public int hashCode() {
-        int hash = ((time.toSecondOfDay() + adjustDays) << 15) +
-                (month.ordinal() << 11) + ((dom + 32) << 5) +
-                ((dow == null ? 7 : dow.ordinal()) << 2) + (timeDefinition.ordinal());
-        return hash ^ standardOffset.hashCode() ^
-                offsetBefore.hashCode() ^ offsetAfter.hashCode();
+        int hash = ((time.toSecondOfDay() + adjustDays) << 15)
+                + (month.ordinal() << 11) + ((dom + 32) << 5)
+                + ((dow == null ? 7 : dow.ordinal()) << 2) + (timeDefinition.ordinal());
+        return hash ^ standardOffset.hashCode() ^ offsetBefore.hashCode() ^ offsetAfter.hashCode();
     }
 
     //-----------------------------------------------------------------------
@@ -482,7 +413,8 @@ public final class ZoneOffsetTransitionRule implements Serializable {
             if (dom == -1) {
                 buf.append(dow.name()).append(" on or before last day of ").append(month.name());
             } else if (dom < 0) {
-                buf.append(dow.name()).append(" on or before last day minus ").append(-dom - 1).append(" of ").append(month.name());
+                buf.append(dow.name()).append(" on or before last day minus ").append(-dom - 1)
+                        .append(" of ").append(month.name());
             } else {
                 buf.append(dow.name()).append(" on or after ").append(month.name()).append(' ').append(dom);
             }
@@ -523,7 +455,7 @@ public final class ZoneOffsetTransitionRule implements Serializable {
      * <li>Relative to the wall offset (what you would see on a clock on the wall)</li>
      * </ul><p>
      */
-    public static enum TimeDefinition {
+    public enum TimeDefinition {
         /** The local date-time is expressed in terms of the UTC offset. */
         UTC,
         /** The local date-time is expressed in terms of the wall offset. */

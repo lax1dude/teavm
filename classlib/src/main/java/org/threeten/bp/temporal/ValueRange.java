@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -32,7 +47,6 @@
 package org.threeten.bp.temporal;
 
 import java.io.Serializable;
-
 import org.threeten.bp.DateTimeException;
 
 /**
@@ -245,7 +259,7 @@ public final class ValueRange implements Serializable {
      * @return true if the value is valid
      */
     public boolean isValidValue(long value) {
-        return (value >= getMinimum() && value <= getMaximum());
+        return value >= getMinimum() && value <= getMaximum();
     }
 
     /**
@@ -273,7 +287,7 @@ public final class ValueRange implements Serializable {
      * @see #isValidValue(long)
      */
     public long checkValidValue(long value, TemporalField field) {
-        if (isValidValue(value) == false) {
+        if (!isValidValue(value)) {
             if (field != null) {
                 throw new DateTimeException("Invalid value for " + field + " (valid values " + this + "): " + value);
             } else {
@@ -296,7 +310,7 @@ public final class ValueRange implements Serializable {
      * @see #isValidIntValue(long)
      */
     public int checkValidIntValue(long value, TemporalField field) {
-        if (isValidIntValue(value) == false) {
+        if (!isValidIntValue(value)) {
             throw new DateTimeException("Invalid int value for " + field + ": " + value);
         }
         return (int) value;
@@ -320,8 +334,8 @@ public final class ValueRange implements Serializable {
         }
         if (obj instanceof ValueRange) {
             ValueRange other = (ValueRange) obj;
-           return minSmallest == other.minSmallest && minLargest == other.minLargest &&
-                   maxSmallest == other.maxSmallest && maxLargest == other.maxLargest;
+           return minSmallest == other.minSmallest && minLargest == other.minLargest
+                   && maxSmallest == other.maxSmallest && maxLargest == other.maxLargest;
         }
         return false;
     }
@@ -333,8 +347,8 @@ public final class ValueRange implements Serializable {
      */
     @Override
     public int hashCode() {
-        long hash = minSmallest + minLargest << 16 + minLargest >> 48 + maxSmallest << 32 +
-            maxSmallest >> 32 + maxLargest << 48 + maxLargest >> 16;
+        long hash = minSmallest + minLargest << 16 + minLargest >> 48 + maxSmallest << 32
+                + maxSmallest >> 32 + maxLargest << 48 + maxLargest >> 16;
         return (int) (hash ^ (hash >>> 32));
     }
 

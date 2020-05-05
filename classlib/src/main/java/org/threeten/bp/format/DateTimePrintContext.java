@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -33,9 +48,8 @@ package org.threeten.bp.format;
 
 import static org.threeten.bp.temporal.ChronoField.EPOCH_DAY;
 import static org.threeten.bp.temporal.ChronoField.INSTANT_SECONDS;
-
 import java.util.Locale;
-
+import java.util.Objects;
 import org.threeten.bp.DateTimeException;
 import org.threeten.bp.Instant;
 import org.threeten.bp.ZoneId;
@@ -43,7 +57,6 @@ import org.threeten.bp.ZoneOffset;
 import org.threeten.bp.chrono.ChronoLocalDate;
 import org.threeten.bp.chrono.Chronology;
 import org.threeten.bp.chrono.IsoChronology;
-import org.threeten.bp.jdk8.Jdk8Methods;
 import org.threeten.bp.temporal.ChronoField;
 import org.threeten.bp.temporal.TemporalAccessor;
 import org.threeten.bp.temporal.TemporalField;
@@ -111,29 +124,30 @@ public final class DateTimePrintContext {
         // ensure minimal change
         Chronology temporalChrono = temporal.query(TemporalQueries.chronology());
         ZoneId temporalZone = temporal.query(TemporalQueries.zoneId());
-        if (Jdk8Methods.equals(temporalChrono, overrideChrono)) {
+        if (Objects.equals(temporalChrono, overrideChrono)) {
             overrideChrono = null;
         }
-        if (Jdk8Methods.equals(temporalZone, overrideZone)) {
+        if (Objects.equals(temporalZone, overrideZone)) {
             overrideZone = null;
         }
         if (overrideChrono == null && overrideZone == null) {
             return temporal;
         }
-        final Chronology effectiveChrono = (overrideChrono != null ? overrideChrono : temporalChrono);
-        final ZoneId effectiveZone = (overrideZone != null ? overrideZone : temporalZone);
+        final Chronology effectiveChrono = overrideChrono != null ? overrideChrono : temporalChrono;
+        final ZoneId effectiveZone = overrideZone != null ? overrideZone : temporalZone;
         
         // use overrides
         if (overrideZone != null) {
             // handle instant
             if (temporal.isSupported(INSTANT_SECONDS)) {
-                Chronology chrono = (effectiveChrono != null ? effectiveChrono : IsoChronology.INSTANCE);
+                Chronology chrono = effectiveChrono != null ? effectiveChrono : IsoChronology.INSTANCE;
                 return chrono.zonedDateTime(Instant.from(temporal), overrideZone);
             }
             // block changing zone on OffsetTime, and similar problem cases
             ZoneId normalizedOffset = overrideZone.normalized();
             ZoneOffset temporalOffset = temporal.query(TemporalQueries.offset());
-            if (normalizedOffset instanceof ZoneOffset && temporalOffset != null && normalizedOffset.equals(temporalOffset) == false) {
+            if (normalizedOffset instanceof ZoneOffset && temporalOffset != null
+                    && !normalizedOffset.equals(temporalOffset)) {
                 throw new DateTimeException("Invalid override zone for temporal: " + overrideZone + " " + temporal);
             }
         }
@@ -146,7 +160,8 @@ public final class DateTimePrintContext {
                 if (!(overrideChrono == IsoChronology.INSTANCE && temporalChrono == null)) {
                     for (ChronoField f : ChronoField.values()) {
                         if (f.isDateBased() && temporal.isSupported(f)) {
-                            throw new DateTimeException("Invalid override chronology for temporal: " + overrideChrono + " " + temporal);
+                            throw new DateTimeException("Invalid override chronology for temporal: "
+                                    + overrideChrono + " " + temporal);
                         }
                     }
                 }
@@ -298,7 +313,7 @@ public final class DateTimePrintContext {
      * @param temporal  the date-time object, not null
      */
     void setDateTime(TemporalAccessor temporal) {
-        Jdk8Methods.requireNonNull(temporal, "temporal");
+        Objects.requireNonNull(temporal, "temporal");
         this.temporal = temporal;
     }
 
@@ -311,7 +326,7 @@ public final class DateTimePrintContext {
      * @param locale  the locale, not null
      */
     void setLocale(Locale locale) {
-        Jdk8Methods.requireNonNull(locale, "locale");
+        Objects.requireNonNull(locale, "locale");
         this.locale = locale;
     }
 

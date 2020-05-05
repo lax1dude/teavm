@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -37,9 +52,8 @@ import static org.threeten.bp.temporal.ChronoField.DAY_OF_YEAR;
 import static org.threeten.bp.temporal.ChronoUnit.DAYS;
 import static org.threeten.bp.temporal.ChronoUnit.MONTHS;
 import static org.threeten.bp.temporal.ChronoUnit.YEARS;
-
+import java.util.Objects;
 import org.threeten.bp.DayOfWeek;
-import org.threeten.bp.jdk8.Jdk8Methods;
 
 /**
  * Common implementations of {@code TemporalAdjuster}.
@@ -259,7 +273,7 @@ public final class TemporalAdjusters {
      * @return the first in month adjuster, not null
      */
     public static TemporalAdjuster firstInMonth(DayOfWeek dayOfWeek) {
-        Jdk8Methods.requireNonNull(dayOfWeek, "dayOfWeek");
+        Objects.requireNonNull(dayOfWeek, "dayOfWeek");
         return new DayOfWeekInMonth(1, dayOfWeek);
     }
 
@@ -280,7 +294,7 @@ public final class TemporalAdjusters {
      * @return the first in month adjuster, not null
      */
     public static TemporalAdjuster lastInMonth(DayOfWeek dayOfWeek) {
-        Jdk8Methods.requireNonNull(dayOfWeek, "dayOfWeek");
+        Objects.requireNonNull(dayOfWeek, "dayOfWeek");
         return new DayOfWeekInMonth(-1, dayOfWeek);
     }
 
@@ -317,7 +331,7 @@ public final class TemporalAdjusters {
      * @return the day-of-week in month adjuster, not null
      */
     public static TemporalAdjuster dayOfWeekInMonth(int ordinal, DayOfWeek dayOfWeek) {
-        Jdk8Methods.requireNonNull(dayOfWeek, "dayOfWeek");
+        Objects.requireNonNull(dayOfWeek, "dayOfWeek");
         return new DayOfWeekInMonth(ordinal, dayOfWeek);
     }
 
@@ -347,7 +361,7 @@ public final class TemporalAdjusters {
                 Temporal temp = temporal.with(DAY_OF_MONTH, temporal.range(DAY_OF_MONTH).getMaximum());
                 int curDow = temp.get(DAY_OF_WEEK);
                 int daysDiff = dowValue - curDow;
-                daysDiff = (daysDiff == 0 ? 0 : (daysDiff > 0 ? daysDiff - 7 : daysDiff));
+                daysDiff = daysDiff == 0 ? 0 : (daysDiff > 0 ? daysDiff - 7 : daysDiff);
                 daysDiff -= (-ordinal - 1L) * 7L;  // safe from overflow
                 return temp.plus(daysDiff, DAYS);
             }
@@ -447,7 +461,7 @@ public final class TemporalAdjusters {
         private final int dowValue;
 
         private RelativeDayOfWeek(int relative, DayOfWeek dayOfWeek) {
-            Jdk8Methods.requireNonNull(dayOfWeek, "dayOfWeek");
+            Objects.requireNonNull(dayOfWeek, "dayOfWeek");
             this.relative = relative;
             this.dowValue = dayOfWeek.getValue();
         }

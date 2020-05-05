@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -45,13 +60,12 @@ import static org.threeten.bp.temporal.ChronoField.PROLEPTIC_MONTH;
 import static org.threeten.bp.temporal.ChronoField.YEAR;
 import static org.threeten.bp.temporal.ChronoField.YEAR_OF_ERA;
 import static org.threeten.bp.temporal.TemporalAdjusters.nextOrSame;
-
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
+import java.util.Objects;
 import org.threeten.bp.Clock;
 import org.threeten.bp.DateTimeException;
 import org.threeten.bp.DayOfWeek;
@@ -328,7 +342,7 @@ public final class IsoChronology extends Chronology implements Serializable {
      */
     @Override  // override with covariant return type
     public LocalDate dateNow(Clock clock) {
-        Jdk8Methods.requireNonNull(clock, "clock");
+        Objects.requireNonNull(clock, "clock");
         return date(LocalDate.now(clock));
     }
 
@@ -359,10 +373,10 @@ public final class IsoChronology extends Chronology implements Serializable {
 
     @Override
     public int prolepticYear(Era era, int yearOfEra) {
-        if (era instanceof IsoEra == false) {
+        if (!(era instanceof IsoEra)) {
             throw new ClassCastException("Era must be IsoEra");
         }
-        return (era == IsoEra.CE ? yearOfEra : 1 - yearOfEra);
+        return era == IsoEra.CE ? yearOfEra : 1 - yearOfEra;
     }
 
     @Override
@@ -409,18 +423,19 @@ public final class IsoChronology extends Chronology implements Serializable {
                 if (resolverStyle == ResolverStyle.STRICT) {
                     // do not invent era if strict, but do cross-check with year
                     if (year != null) {
-                        updateResolveMap(fieldValues, YEAR, (year > 0 ? yoeLong: Jdk8Methods.safeSubtract(1, yoeLong)));
+                        updateResolveMap(fieldValues, YEAR, year > 0 ? yoeLong : Jdk8Methods.safeSubtract(1, yoeLong));
                     } else {
                         // reinstate the field removed earlier, no cross-check issues
                         fieldValues.put(YEAR_OF_ERA, yoeLong);
                     }
                 } else {
                     // invent era
-                    updateResolveMap(fieldValues, YEAR, (year == null || year > 0 ? yoeLong: Jdk8Methods.safeSubtract(1, yoeLong)));
+                    updateResolveMap(fieldValues, YEAR,
+                            year == null || year > 0 ? yoeLong : Jdk8Methods.safeSubtract(1, yoeLong));
                 }
-            } else if (era.longValue() == 1L) {
+            } else if (era == 1L) {
                 updateResolveMap(fieldValues, YEAR, yoeLong);
-            } else if (era.longValue() == 0L) {
+            } else if (era == 0L) {
                 updateResolveMap(fieldValues, YEAR, Jdk8Methods.safeSubtract(1, yoeLong));
             } else {
                 throw new DateTimeException("Invalid value for era: " + era);
@@ -440,7 +455,7 @@ public final class IsoChronology extends Chronology implements Serializable {
                         long months = Jdk8Methods.safeSubtract(moy, 1);
                         long days = Jdk8Methods.safeSubtract(dom, 1);
                         return LocalDate.of(y, 1, 1).plusMonths(months).plusDays(days);
-                    } else if (resolverStyle == ResolverStyle.SMART){
+                    } else if (resolverStyle == ResolverStyle.SMART) {
                         DAY_OF_MONTH.checkValidValue(dom);
                         if (moy == 4 || moy == 6 || moy == 9 || moy == 11) {
                             dom = Math.min(dom, 30);
@@ -463,7 +478,8 @@ public final class IsoChronology extends Chronology implements Serializable {
                         }
                         int moy = MONTH_OF_YEAR.checkValidIntValue(fieldValues.remove(MONTH_OF_YEAR));
                         int aw = ALIGNED_WEEK_OF_MONTH.checkValidIntValue(fieldValues.remove(ALIGNED_WEEK_OF_MONTH));
-                        int ad = ALIGNED_DAY_OF_WEEK_IN_MONTH.checkValidIntValue(fieldValues.remove(ALIGNED_DAY_OF_WEEK_IN_MONTH));
+                        int ad = ALIGNED_DAY_OF_WEEK_IN_MONTH.checkValidIntValue(
+                                fieldValues.remove(ALIGNED_DAY_OF_WEEK_IN_MONTH));
                         LocalDate date = LocalDate.of(y, moy, 1).plusDays((aw - 1) * 7 + (ad - 1));
                         if (resolverStyle == ResolverStyle.STRICT && date.get(MONTH_OF_YEAR) != moy) {
                             throw new DateTimeException("Strict mode rejected date parsed to a different month");
@@ -507,7 +523,8 @@ public final class IsoChronology extends Chronology implements Serializable {
                         return LocalDate.of(y, 1, 1).plusWeeks(weeks).plusDays(days);
                     }
                     int aw = ALIGNED_WEEK_OF_YEAR.checkValidIntValue(fieldValues.remove(ALIGNED_WEEK_OF_YEAR));
-                    int ad = ALIGNED_DAY_OF_WEEK_IN_YEAR.checkValidIntValue(fieldValues.remove(ALIGNED_DAY_OF_WEEK_IN_YEAR));
+                    int ad = ALIGNED_DAY_OF_WEEK_IN_YEAR.checkValidIntValue(
+                            fieldValues.remove(ALIGNED_DAY_OF_WEEK_IN_YEAR));
                     LocalDate date = LocalDate.of(y, 1, 1).plusDays((aw - 1) * 7 + (ad - 1));
                     if (resolverStyle == ResolverStyle.STRICT && date.get(YEAR) != y) {
                         throw new DateTimeException("Strict mode rejected date parsed to a different year");

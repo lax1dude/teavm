@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -31,9 +46,6 @@
  */
 package org.threeten.bp.zone;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -196,77 +208,6 @@ final class StandardZoneRules extends ZoneRules implements Serializable {
     }
 
     //-----------------------------------------------------------------------
-    /**
-     * Uses a serialization delegate.
-     *
-     * @return the replacing object, not null
-     */
-    private Object writeReplace() {
-        return new Ser(Ser.SZR, this);
-    }
-
-    /**
-     * Writes the state to the stream.
-     *
-     * @param out  the output stream, not null
-     * @throws IOException if an error occurs
-     */
-    void writeExternal(DataOutput out) throws IOException {
-        out.writeInt(standardTransitions.length);
-        for (long trans : standardTransitions) {
-            Ser.writeEpochSec(trans, out);
-        }
-        for (ZoneOffset offset : standardOffsets) {
-            Ser.writeOffset(offset, out);
-        }
-        out.writeInt(savingsInstantTransitions.length);
-        for (long trans : savingsInstantTransitions) {
-            Ser.writeEpochSec(trans, out);
-        }
-        for (ZoneOffset offset : wallOffsets) {
-            Ser.writeOffset(offset, out);
-        }
-        out.writeByte(lastRules.length);
-        for (ZoneOffsetTransitionRule rule : lastRules) {
-            rule.writeExternal(out);
-        }
-    }
-
-    /**
-     * Reads the state from the stream.
-     *
-     * @param in  the input stream, not null
-     * @return the created object, not null
-     * @throws IOException if an error occurs
-     */
-    static StandardZoneRules readExternal(DataInput in) throws IOException, ClassNotFoundException {
-        int stdSize = in.readInt();
-        long[] stdTrans = new long[stdSize];
-        for (int i = 0; i < stdSize; i++) {
-            stdTrans[i] = Ser.readEpochSec(in);
-        }
-        ZoneOffset[] stdOffsets = new ZoneOffset[stdSize + 1];
-        for (int i = 0; i < stdOffsets.length; i++) {
-            stdOffsets[i] = Ser.readOffset(in);
-        }
-        int savSize = in.readInt();
-        long[] savTrans = new long[savSize];
-        for (int i = 0; i < savSize; i++) {
-            savTrans[i] = Ser.readEpochSec(in);
-        }
-        ZoneOffset[] savOffsets = new ZoneOffset[savSize + 1];
-        for (int i = 0; i < savOffsets.length; i++) {
-            savOffsets[i] = Ser.readOffset(in);
-        }
-        int ruleSize = in.readByte();
-        ZoneOffsetTransitionRule[] rules = new ZoneOffsetTransitionRule[ruleSize];
-        for (int i = 0; i < ruleSize; i++) {
-            rules[i] = ZoneOffsetTransitionRule.readExternal(in);
-        }
-        return new StandardZoneRules(stdTrans, stdOffsets, savTrans, savOffsets, rules);
-    }
-
-    //-----------------------------------------------------------------------
     @Override
     public boolean isFixedOffset() {
         return savingsInstantTransitions.length == 0;
@@ -278,8 +219,7 @@ final class StandardZoneRules extends ZoneRules implements Serializable {
         long epochSec = instant.getEpochSecond();
 
         // check if using last rules
-        if (lastRules.length > 0 &&
-                epochSec > savingsInstantTransitions[savingsInstantTransitions.length - 1]) {
+        if (lastRules.length > 0 && epochSec > savingsInstantTransitions[savingsInstantTransitions.length - 1]) {
             int year = findYear(epochSec, wallOffsets[wallOffsets.length - 1]);
             ZoneOffsetTransition[] transArray = findTransitionArray(year);
             ZoneOffsetTransition trans = null;
@@ -324,13 +264,12 @@ final class StandardZoneRules extends ZoneRules implements Serializable {
     @Override
     public ZoneOffsetTransition getTransition(LocalDateTime localDateTime) {
         Object info = getOffsetInfo(localDateTime);
-        return (info instanceof ZoneOffsetTransition ? (ZoneOffsetTransition) info : null);
+        return info instanceof ZoneOffsetTransition ? (ZoneOffsetTransition) info : null;
     }
 
     private Object getOffsetInfo(LocalDateTime dt) {
         // check if using last rules
-        if (lastRules.length > 0 &&
-                dt.isAfter(savingsLocalTransitions[savingsLocalTransitions.length - 1])) {
+        if (lastRules.length > 0 &&  dt.isAfter(savingsLocalTransitions[savingsLocalTransitions.length - 1])) {
             ZoneOffsetTransition[] transArray = findTransitionArray(dt.getYear());
             Object info = null;
             for (ZoneOffsetTransition trans : transArray) {
@@ -351,8 +290,8 @@ final class StandardZoneRules extends ZoneRules implements Serializable {
         if (index < 0) {
             // switch negative insert position to start of matched range
             index = -index - 2;
-        } else if (index < savingsLocalTransitions.length - 1 &&
-                savingsLocalTransitions[index].equals(savingsLocalTransitions[index + 1])) {
+        } else if (index < savingsLocalTransitions.length - 1
+                && savingsLocalTransitions[index].equals(savingsLocalTransitions[index + 1])) {
             // handle overlap immediately following gap
             index++;
         }
@@ -394,7 +333,7 @@ final class StandardZoneRules extends ZoneRules implements Serializable {
                 return trans.getOffsetAfter();
             }
         } else {
-            if (dt.isBefore(localTransition) == false) {
+            if (!dt.isBefore(localTransition)) {
                 return trans.getOffsetAfter();
             }
             if (dt.isBefore(trans.getDateTimeAfter())) {
@@ -455,7 +394,7 @@ final class StandardZoneRules extends ZoneRules implements Serializable {
 
     @Override
     public boolean isDaylightSavings(Instant instant) {
-        return (getStandardOffset(instant).equals(getOffset(instant)) == false);
+        return !getStandardOffset(instant).equals(getOffset(instant));
     }
 
     //-----------------------------------------------------------------------
@@ -538,7 +477,8 @@ final class StandardZoneRules extends ZoneRules implements Serializable {
         if (index <= 0) {
             return null;
         }
-        return new ZoneOffsetTransition(savingsInstantTransitions[index - 1], wallOffsets[index - 1], wallOffsets[index]);
+        return new ZoneOffsetTransition(savingsInstantTransitions[index - 1], wallOffsets[index - 1],
+                wallOffsets[index]);
     }
 
     private int findYear(long epochSecond, ZoneOffset offset) {
@@ -571,11 +511,11 @@ final class StandardZoneRules extends ZoneRules implements Serializable {
         }
         if (obj instanceof StandardZoneRules) {
             StandardZoneRules other = (StandardZoneRules) obj;
-            return Arrays.equals(standardTransitions, other.standardTransitions) &&
-                    Arrays.equals(standardOffsets, other.standardOffsets) &&
-                    Arrays.equals(savingsInstantTransitions, other.savingsInstantTransitions) &&
-                    Arrays.equals(wallOffsets, other.wallOffsets) &&
-                    Arrays.equals(lastRules, other.lastRules);
+            return Arrays.equals(standardTransitions, other.standardTransitions)
+                    && Arrays.equals(standardOffsets, other.standardOffsets)
+                    && Arrays.equals(savingsInstantTransitions, other.savingsInstantTransitions)
+                    && Arrays.equals(wallOffsets, other.wallOffsets)
+                    && Arrays.equals(lastRules, other.lastRules);
         }
         if (obj instanceof Fixed) {
             return isFixedOffset() && getOffset(Instant.EPOCH).equals(((Fixed) obj).getOffset(Instant.EPOCH));
@@ -585,11 +525,11 @@ final class StandardZoneRules extends ZoneRules implements Serializable {
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(standardTransitions) ^
-                Arrays.hashCode(standardOffsets) ^
-                Arrays.hashCode(savingsInstantTransitions) ^
-                Arrays.hashCode(wallOffsets) ^
-                Arrays.hashCode(lastRules);
+        return Arrays.hashCode(standardTransitions)
+                ^ Arrays.hashCode(standardOffsets)
+                ^ Arrays.hashCode(savingsInstantTransitions)
+                ^ Arrays.hashCode(wallOffsets)
+                ^ Arrays.hashCode(lastRules);
     }
 
     //-----------------------------------------------------------------------

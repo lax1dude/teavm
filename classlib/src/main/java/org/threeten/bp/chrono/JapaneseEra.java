@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -31,19 +46,14 @@
  */
 package org.threeten.bp.chrono;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.threeten.bp.DateTimeException;
 import org.threeten.bp.LocalDate;
-import org.threeten.bp.jdk8.DefaultInterfaceEra;
-import org.threeten.bp.jdk8.Jdk8Methods;
 import org.threeten.bp.temporal.ChronoField;
 import org.threeten.bp.temporal.TemporalField;
 import org.threeten.bp.temporal.ValueRange;
@@ -63,8 +73,7 @@ import org.threeten.bp.temporal.ValueRange;
  * This class is immutable and thread-safe.
  */
 public final class JapaneseEra
-        extends DefaultInterfaceEra
-        implements Serializable {
+        implements Era, Serializable {
 
     // The offset value to 0-based index from the era value.
     // i.e., getValue() + ERA_OFFSET == 0-based index; except that -999 is mapped to zero
@@ -181,8 +190,8 @@ public final class JapaneseEra
         if (known.length > 5) {
             throw new DateTimeException("Only one additional Japanese era can be added");
         }
-        Jdk8Methods.requireNonNull(since, "since");
-        Jdk8Methods.requireNonNull(name, "name");
+        Objects.requireNonNull(since, "since");
+        Objects.requireNonNull(name, "name");
         if (!since.isAfter(REIWA.since)) {
             throw new DateTimeException("Invalid since date for additional Japanese era, must be after Reiwa");
         }
@@ -225,7 +234,7 @@ public final class JapaneseEra
      * @throws IllegalArgumentException if there is not JapaneseEra with the specified name
      */
     public static JapaneseEra valueOf(String japaneseEra) {
-        Jdk8Methods.requireNonNull(japaneseEra, "japaneseEra");
+        Objects.requireNonNull(japaneseEra, "japaneseEra");
         JapaneseEra[] known = KNOWN_ERAS.get();
         for (JapaneseEra era : known) {
             if (japaneseEra.equals(era.name)) {
@@ -323,27 +332,13 @@ public final class JapaneseEra
         if (field == ChronoField.ERA) {
             return JapaneseChronology.INSTANCE.range(ChronoField.ERA);
         }
-        return super.range(field);
+        return Era.super.range(field);
     }
 
     //-----------------------------------------------------------------------
     @Override
     public String toString() {
         return name;
-    }
-
-    //-----------------------------------------------------------------------
-    private Object writeReplace() {
-        return new Ser(Ser.JAPANESE_ERA_TYPE, this);
-    }
-
-    void writeExternal(DataOutput out) throws IOException {
-        out.writeByte(this.getValue());
-    }
-
-    static JapaneseEra readExternal(DataInput in) throws IOException {
-        byte eraValue = in.readByte();
-        return JapaneseEra.of(eraValue);
     }
 
 }

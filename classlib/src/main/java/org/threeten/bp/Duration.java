@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -38,12 +53,6 @@ import static org.threeten.bp.temporal.ChronoField.NANO_OF_SECOND;
 import static org.threeten.bp.temporal.ChronoUnit.DAYS;
 import static org.threeten.bp.temporal.ChronoUnit.NANOS;
 import static org.threeten.bp.temporal.ChronoUnit.SECONDS;
-
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.io.InvalidObjectException;
-import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -51,9 +60,9 @@ import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.threeten.bp.format.DateTimeParseException;
 import org.threeten.bp.jdk8.Jdk8Methods;
 import org.threeten.bp.temporal.ChronoField;
@@ -116,9 +125,10 @@ public final class Duration
     /**
      * The pattern for parsing.
      */
+    // TODO: get rid of regexp
     private final static Pattern PATTERN =
-            Pattern.compile("([-+]?)P(?:([-+]?[0-9]+)D)?" +
-                    "(T(?:([-+]?[0-9]+)H)?(?:([-+]?[0-9]+)M)?(?:([-+]?[0-9]+)(?:[.,]([0-9]{0,9}))?S)?)?",
+            Pattern.compile("([-+]?)P(?:([-+]?[0-9]+)D)?"
+                    + "(T(?:([-+]?[0-9]+)H)?(?:([-+]?[0-9]+)M)?(?:([-+]?[0-9]+)(?:[.,]([0-9]{0,9}))?S)?)?",
                     Pattern.CASE_INSENSITIVE);
 
     /**
@@ -295,7 +305,7 @@ public final class Duration
      * @throws ArithmeticException if a numeric overflow occurs
      */
     public static Duration from(TemporalAmount amount) {
-        Jdk8Methods.requireNonNull(amount, "amount");
+        Objects.requireNonNull(amount, "amount");
         Duration duration = ZERO;
         for (TemporalUnit unit : amount.getUnits()) {
             duration = duration.plus(amount.get(unit), unit);
@@ -336,11 +346,9 @@ public final class Duration
                 } else if (secs == 0 && nanos != 0) {
                     // two possible meanings for result, so recalculate secs
                     Temporal adjustedEnd = endExclusive.with(NANO_OF_SECOND, startNos);
-                    secs = startInclusive.until(adjustedEnd, SECONDS);;
+                    secs = startInclusive.until(adjustedEnd, SECONDS);
                 }
-            } catch (DateTimeException ex2) {
-                // ignore and only use seconds
-            } catch (ArithmeticException ex2) {
+            } catch (DateTimeException | ArithmeticException ex2) {
                 // ignore and only use seconds
             }
         }
@@ -393,11 +401,11 @@ public final class Duration
      * @throws DateTimeParseException if the text cannot be parsed to a duration
      */
     public static Duration parse(CharSequence text) {
-        Jdk8Methods.requireNonNull(text, "text");
+        Objects.requireNonNull(text, "text");
         Matcher matcher = PATTERN.matcher(text);
         if (matcher.matches()) {
             // check for letter T but no time sections
-            if ("T".equals(matcher.group(3)) == false) {
+            if (!"T".equals(matcher.group(3))) {
                 boolean negate = "-".equals(matcher.group(1));
                 String dayMatch = matcher.group(2);
                 String hourMatch = matcher.group(4);
@@ -414,7 +422,7 @@ public final class Duration
                     try {
                         return create(negate, daysAsSecs, hoursAsSecs, minsAsSecs, seconds, nanos);
                     } catch (ArithmeticException ex) {
-                        throw (DateTimeParseException) new DateTimeParseException("Text cannot be parsed to a Duration: overflow", text, 0).initCause(ex);
+                        throw new DateTimeParseException("Text cannot be parsed to a Duration: overflow", text, 0, ex);
                     }
                 }
             }
@@ -433,10 +441,8 @@ public final class Duration
             }
             long val = Long.parseLong(parsed);
             return Jdk8Methods.safeMultiply(val, multiplier);
-        } catch (NumberFormatException ex) {
-            throw (DateTimeParseException) new DateTimeParseException("Text cannot be parsed to a Duration: " + errorText, text, 0).initCause(ex);
-        } catch (ArithmeticException ex) {
-            throw (DateTimeParseException) new DateTimeParseException("Text cannot be parsed to a Duration: " + errorText, text, 0).initCause(ex);
+        } catch (NumberFormatException | ArithmeticException ex) {
+            throw new DateTimeParseException("Text cannot be parsed to a Duration: " + errorText, text, 0, ex);
         }
     }
 
@@ -448,15 +454,15 @@ public final class Duration
         try {
             parsed = (parsed + "000000000").substring(0, 9);
             return Integer.parseInt(parsed) * negate;
-        } catch (NumberFormatException ex) {
-            throw (DateTimeParseException) new DateTimeParseException("Text cannot be parsed to a Duration: fraction", text, 0).initCause(ex);
-        } catch (ArithmeticException ex) {
-            throw (DateTimeParseException) new DateTimeParseException("Text cannot be parsed to a Duration: fraction", text, 0).initCause(ex);
+        } catch (NumberFormatException | ArithmeticException ex) {
+            throw new DateTimeParseException("Text cannot be parsed to a Duration: fraction", text, 0, ex);
         }
     }
 
-    private static Duration create(boolean negate, long daysAsSecs, long hoursAsSecs, long minsAsSecs, long secs, int nanos) {
-        long seconds = Jdk8Methods.safeAdd(daysAsSecs, Jdk8Methods.safeAdd(hoursAsSecs, Jdk8Methods.safeAdd(minsAsSecs, secs)));
+    private static Duration create(boolean negate, long daysAsSecs, long hoursAsSecs, long minsAsSecs,
+            long secs, int nanos) {
+        long seconds = Jdk8Methods.safeAdd(daysAsSecs, Jdk8Methods.safeAdd(hoursAsSecs,
+                Jdk8Methods.safeAdd(minsAsSecs, secs)));
         if (negate) {
             return ofSeconds(seconds, nanos).negated();
         }
@@ -633,7 +639,7 @@ public final class Duration
      * @throws ArithmeticException if numeric overflow occurs
      */
     public Duration plus(long amountToAdd, TemporalUnit unit) {
-        Jdk8Methods.requireNonNull(unit, "unit");
+        Objects.requireNonNull(unit, "unit");
         if (unit == DAYS) {
             return plus(Jdk8Methods.safeMultiply(amountToAdd, SECONDS_PER_DAY), 0);
         }
@@ -645,10 +651,15 @@ public final class Duration
         }
         if (unit instanceof ChronoUnit) {
             switch ((ChronoUnit) unit) {
-                case NANOS: return plusNanos(amountToAdd);
-                case MICROS: return plusSeconds((amountToAdd / (1000000L * 1000)) * 1000).plusNanos((amountToAdd % (1000000L * 1000)) * 1000);
-                case MILLIS: return plusMillis(amountToAdd);
-                case SECONDS: return plusSeconds(amountToAdd);
+                case NANOS:
+                    return plusNanos(amountToAdd);
+                case MICROS:
+                    return plusSeconds((amountToAdd / (1000000L * 1000)) * 1000)
+                            .plusNanos((amountToAdd % (1000000L * 1000)) * 1000);
+                case MILLIS:
+                    return plusMillis(amountToAdd);
+                case SECONDS:
+                    return plusSeconds(amountToAdd);
             }
             return plusSeconds(Jdk8Methods.safeMultiply(unit.getDuration().seconds, amountToAdd));
         }
@@ -791,7 +802,9 @@ public final class Duration
      * @throws ArithmeticException if numeric overflow occurs
      */
     public Duration minus(long amountToSubtract, TemporalUnit unit) {
-        return (amountToSubtract == Long.MIN_VALUE ? plus(Long.MAX_VALUE, unit).plus(1, unit) : plus(-amountToSubtract, unit));
+        return amountToSubtract == Long.MIN_VALUE
+                ? plus(Long.MAX_VALUE, unit).plus(1, unit)
+                : plus(-amountToSubtract, unit);
     }
 
     //-----------------------------------------------------------------------
@@ -805,7 +818,7 @@ public final class Duration
      * @throws ArithmeticException if numeric overflow occurs
      */
     public Duration minusDays(long daysToSubtract) {
-        return (daysToSubtract == Long.MIN_VALUE ? plusDays(Long.MAX_VALUE).plusDays(1) : plusDays(-daysToSubtract));
+        return daysToSubtract == Long.MIN_VALUE ? plusDays(Long.MAX_VALUE).plusDays(1) : plusDays(-daysToSubtract);
     }
 
     /**
@@ -818,7 +831,9 @@ public final class Duration
      * @throws ArithmeticException if numeric overflow occurs
      */
     public Duration minusHours(long hoursToSubtract) {
-        return (hoursToSubtract == Long.MIN_VALUE ? plusHours(Long.MAX_VALUE).plusHours(1) : plusHours(-hoursToSubtract));
+        return hoursToSubtract == Long.MIN_VALUE
+                ? plusHours(Long.MAX_VALUE).plusHours(1)
+                : plusHours(-hoursToSubtract);
     }
 
     /**
@@ -831,7 +846,9 @@ public final class Duration
      * @throws ArithmeticException if numeric overflow occurs
      */
     public Duration minusMinutes(long minutesToSubtract) {
-        return (minutesToSubtract == Long.MIN_VALUE ? plusMinutes(Long.MAX_VALUE).plusMinutes(1) : plusMinutes(-minutesToSubtract));
+        return minutesToSubtract == Long.MIN_VALUE
+                ? plusMinutes(Long.MAX_VALUE).plusMinutes(1)
+                : plusMinutes(-minutesToSubtract);
     }
 
     /**
@@ -844,7 +861,9 @@ public final class Duration
      * @throws ArithmeticException if numeric overflow occurs
      */
     public Duration minusSeconds(long secondsToSubtract) {
-        return (secondsToSubtract == Long.MIN_VALUE ? plusSeconds(Long.MAX_VALUE).plusSeconds(1) : plusSeconds(-secondsToSubtract));
+        return secondsToSubtract == Long.MIN_VALUE
+                ? plusSeconds(Long.MAX_VALUE).plusSeconds(1)
+                : plusSeconds(-secondsToSubtract);
     }
 
     /**
@@ -857,7 +876,9 @@ public final class Duration
      * @throws ArithmeticException if numeric overflow occurs
      */
     public Duration minusMillis(long millisToSubtract) {
-        return (millisToSubtract == Long.MIN_VALUE ? plusMillis(Long.MAX_VALUE).plusMillis(1) : plusMillis(-millisToSubtract));
+        return millisToSubtract == Long.MIN_VALUE
+                ? plusMillis(Long.MAX_VALUE).plusMillis(1)
+                : plusMillis(-millisToSubtract);
     }
 
     /**
@@ -870,7 +891,9 @@ public final class Duration
      * @throws ArithmeticException if numeric overflow occurs
      */
     public Duration minusNanos(long nanosToSubtract) {
-        return (nanosToSubtract == Long.MIN_VALUE ? plusNanos(Long.MAX_VALUE).plusNanos(1) : plusNanos(-nanosToSubtract));
+        return nanosToSubtract == Long.MIN_VALUE
+                ? plusNanos(Long.MAX_VALUE).plusNanos(1)
+                : plusNanos(-nanosToSubtract);
     }
 
     //-----------------------------------------------------------------------
@@ -1131,7 +1154,7 @@ public final class Duration
      */
     @Override
     public int compareTo(Duration otherDuration) {
-        int cmp = Jdk8Methods.compareLongs(seconds, otherDuration.seconds);
+        int cmp = Long.compare(seconds, otherDuration.seconds);
         if (cmp != 0) {
             return cmp;
         }
@@ -1154,8 +1177,7 @@ public final class Duration
         }
         if (otherDuration instanceof Duration) {
             Duration other = (Duration) otherDuration;
-            return this.seconds == other.seconds &&
-                   this.nanos == other.nanos;
+            return this.seconds == other.seconds && this.nanos == other.nanos;
         }
         return false;
     }
@@ -1236,30 +1258,4 @@ public final class Duration
         buf.append('S');
         return buf.toString();
     }
-
-    //-----------------------------------------------------------------------
-    private Object writeReplace() {
-        return new Ser(Ser.DURATION_TYPE, this);
-    }
-
-    /**
-     * Defend against malicious streams.
-     * @return never
-     * @throws InvalidObjectException always
-     */
-    private Object readResolve() throws ObjectStreamException {
-        throw new InvalidObjectException("Deserialization via serialization delegate");
-    }
-
-    void writeExternal(DataOutput out) throws IOException {
-        out.writeLong(seconds);
-        out.writeInt(nanos);
-    }
-
-    static Duration readExternal(DataInput in) throws IOException {
-        long seconds = in.readLong();
-        int nanos = in.readInt();
-        return Duration.ofSeconds(seconds, nanos);
-    }
-
 }

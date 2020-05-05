@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -36,20 +51,12 @@ import static org.threeten.bp.temporal.ChronoField.INSTANT_SECONDS;
 import static org.threeten.bp.temporal.ChronoField.NANO_OF_DAY;
 import static org.threeten.bp.temporal.ChronoField.OFFSET_SECONDS;
 import static org.threeten.bp.temporal.ChronoUnit.NANOS;
-
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.io.InvalidObjectException;
-import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.Comparator;
-
+import java.util.Objects;
 import org.threeten.bp.chrono.IsoChronology;
 import org.threeten.bp.format.DateTimeFormatter;
 import org.threeten.bp.format.DateTimeParseException;
-import org.threeten.bp.jdk8.DefaultInterfaceTemporal;
-import org.threeten.bp.jdk8.Jdk8Methods;
 import org.threeten.bp.temporal.ChronoField;
 import org.threeten.bp.temporal.ChronoUnit;
 import org.threeten.bp.temporal.Temporal;
@@ -88,7 +95,6 @@ import org.threeten.bp.zone.ZoneRules;
  * This class is immutable and thread-safe.
  */
 public final class OffsetDateTime
-        extends DefaultInterfaceTemporal
         implements Temporal, TemporalAdjuster, Comparable<OffsetDateTime>, Serializable {
 
     /**
@@ -133,16 +139,8 @@ public final class OffsetDateTime
     public static Comparator<OffsetDateTime> timeLineOrder() {
         return INSTANT_COMPARATOR;
     }
-    private static final Comparator<OffsetDateTime> INSTANT_COMPARATOR = new Comparator<OffsetDateTime>() {
-        @Override
-        public int compare(OffsetDateTime datetime1, OffsetDateTime datetime2) {
-            int cmp = Jdk8Methods.compareLongs(datetime1.toEpochSecond(), datetime2.toEpochSecond());
-            if (cmp == 0) {
-                cmp = Jdk8Methods.compareLongs(datetime1.getNano(), datetime2.getNano());
-            }
-            return cmp;
-        }
-    };
+    private static final Comparator<OffsetDateTime> INSTANT_COMPARATOR =
+            Comparator.comparingLong(OffsetDateTime::toEpochSecond).thenComparingInt(OffsetDateTime::getNano);
 
     /**
      * Serialization version.
@@ -205,7 +203,7 @@ public final class OffsetDateTime
      * @return the current date-time, not null
      */
     public static OffsetDateTime now(Clock clock) {
-        Jdk8Methods.requireNonNull(clock, "clock");
+        Objects.requireNonNull(clock, "clock");
         final Instant now = clock.instant();  // called once
         return ofInstant(now, clock.getZone().getRules().getOffset(now));
     }
@@ -284,8 +282,8 @@ public final class OffsetDateTime
      * @throws DateTimeException if the result exceeds the supported range
      */
     public static OffsetDateTime ofInstant(Instant instant, ZoneId zone) {
-        Jdk8Methods.requireNonNull(instant, "instant");
-        Jdk8Methods.requireNonNull(zone, "zone");
+        Objects.requireNonNull(instant, "instant");
+        Objects.requireNonNull(zone, "zone");
         ZoneRules rules = zone.getRules();
         ZoneOffset offset = rules.getOffset(instant);
         LocalDateTime ldt = LocalDateTime.ofEpochSecond(instant.getEpochSecond(), instant.getNano(), offset);
@@ -323,8 +321,8 @@ public final class OffsetDateTime
                 return OffsetDateTime.ofInstant(instant, offset);
             }
         } catch (DateTimeException ex) {
-            throw new DateTimeException("Unable to obtain OffsetDateTime from TemporalAccessor: " +
-                    temporal + ", type " + temporal.getClass().getName());
+            throw new DateTimeException("Unable to obtain OffsetDateTime from TemporalAccessor: "
+                    + temporal + ", type " + temporal.getClass().getName());
         }
     }
 
@@ -355,7 +353,7 @@ public final class OffsetDateTime
      * @throws DateTimeParseException if the text cannot be parsed
      */
     public static OffsetDateTime parse(CharSequence text, DateTimeFormatter formatter) {
-        Jdk8Methods.requireNonNull(formatter, "formatter");
+        Objects.requireNonNull(formatter, "formatter");
         return formatter.parse(text, OffsetDateTime.FROM);
     }
 
@@ -367,8 +365,8 @@ public final class OffsetDateTime
      * @param offset  the zone offset, not null
      */
     private OffsetDateTime(LocalDateTime dateTime, ZoneOffset offset) {
-        this.dateTime = Jdk8Methods.requireNonNull(dateTime, "dateTime");
-        this.offset = Jdk8Methods.requireNonNull(offset, "offset");
+        this.dateTime = Objects.requireNonNull(dateTime, "dateTime");
+        this.offset = Objects.requireNonNull(offset, "offset");
     }
 
     /**
@@ -516,7 +514,7 @@ public final class OffsetDateTime
             }
             return dateTime.get(field);
         }
-        return super.get(field);
+        return Temporal.super.get(field);
     }
 
     /**
@@ -1226,7 +1224,9 @@ public final class OffsetDateTime
      */
     @Override
     public OffsetDateTime minus(long amountToSubtract, TemporalUnit unit) {
-        return (amountToSubtract == Long.MIN_VALUE ? plus(Long.MAX_VALUE, unit).plus(1, unit) : plus(-amountToSubtract, unit));
+        return amountToSubtract == Long.MIN_VALUE
+                ? plus(Long.MAX_VALUE, unit).plus(1, unit)
+                : plus(-amountToSubtract, unit);
     }
 
     //-----------------------------------------------------------------------
@@ -1251,7 +1251,7 @@ public final class OffsetDateTime
      * @throws DateTimeException if the result exceeds the supported date range
      */
     public OffsetDateTime minusYears(long years) {
-        return (years == Long.MIN_VALUE ? plusYears(Long.MAX_VALUE).plusYears(1) : plusYears(-years));
+        return years == Long.MIN_VALUE ? plusYears(Long.MAX_VALUE).plusYears(1) : plusYears(-years);
     }
 
     /**
@@ -1275,7 +1275,7 @@ public final class OffsetDateTime
      * @throws DateTimeException if the result exceeds the supported date range
      */
     public OffsetDateTime minusMonths(long months) {
-        return (months == Long.MIN_VALUE ? plusMonths(Long.MAX_VALUE).plusMonths(1) : plusMonths(-months));
+        return months == Long.MIN_VALUE ? plusMonths(Long.MAX_VALUE).plusMonths(1) : plusMonths(-months);
     }
 
     /**
@@ -1294,7 +1294,7 @@ public final class OffsetDateTime
      * @throws DateTimeException if the result exceeds the supported date range
      */
     public OffsetDateTime minusWeeks(long weeks) {
-        return (weeks == Long.MIN_VALUE ? plusWeeks(Long.MAX_VALUE).plusWeeks(1) : plusWeeks(-weeks));
+        return weeks == Long.MIN_VALUE ? plusWeeks(Long.MAX_VALUE).plusWeeks(1) : plusWeeks(-weeks);
     }
 
     /**
@@ -1313,7 +1313,9 @@ public final class OffsetDateTime
      * @throws DateTimeException if the result exceeds the supported date range
      */
     public OffsetDateTime minusDays(long days) {
-        return (days == Long.MIN_VALUE ? plusDays(Long.MAX_VALUE).plusDays(1) : plusDays(-days));
+        return days == Long.MIN_VALUE
+                ? plusDays(Long.MAX_VALUE).plusDays(1)
+                : plusDays(-days);
     }
 
     /**
@@ -1326,7 +1328,7 @@ public final class OffsetDateTime
      * @throws DateTimeException if the result exceeds the supported date range
      */
     public OffsetDateTime minusHours(long hours) {
-        return (hours == Long.MIN_VALUE ? plusHours(Long.MAX_VALUE).plusHours(1) : plusHours(-hours));
+        return hours == Long.MIN_VALUE ? plusHours(Long.MAX_VALUE).plusHours(1) : plusHours(-hours);
     }
 
     /**
@@ -1339,7 +1341,7 @@ public final class OffsetDateTime
      * @throws DateTimeException if the result exceeds the supported date range
      */
     public OffsetDateTime minusMinutes(long minutes) {
-        return (minutes == Long.MIN_VALUE ? plusMinutes(Long.MAX_VALUE).plusMinutes(1) : plusMinutes(-minutes));
+        return minutes == Long.MIN_VALUE ? plusMinutes(Long.MAX_VALUE).plusMinutes(1) : plusMinutes(-minutes);
     }
 
     /**
@@ -1352,7 +1354,7 @@ public final class OffsetDateTime
      * @throws DateTimeException if the result exceeds the supported date range
      */
     public OffsetDateTime minusSeconds(long seconds) {
-        return (seconds == Long.MIN_VALUE ? plusSeconds(Long.MAX_VALUE).plusSeconds(1) : plusSeconds(-seconds));
+        return seconds == Long.MIN_VALUE ? plusSeconds(Long.MAX_VALUE).plusSeconds(1) : plusSeconds(-seconds);
     }
 
     /**
@@ -1365,7 +1367,7 @@ public final class OffsetDateTime
      * @throws DateTimeException if the result exceeds the supported date range
      */
     public OffsetDateTime minusNanos(long nanos) {
-        return (nanos == Long.MIN_VALUE ? plusNanos(Long.MAX_VALUE).plusNanos(1) : plusNanos(-nanos));
+        return nanos == Long.MIN_VALUE ? plusNanos(Long.MAX_VALUE).plusNanos(1) : plusNanos(-nanos);
     }
 
     //-----------------------------------------------------------------------
@@ -1403,7 +1405,7 @@ public final class OffsetDateTime
         } else if (query == TemporalQueries.zoneId()) {
             return null;
         }
-        return super.query(query);
+        return Temporal.super.query(query);
     }
 
     /**
@@ -1661,7 +1663,7 @@ public final class OffsetDateTime
         if (getOffset().equals(other.getOffset())) {
             return toLocalDateTime().compareTo(other.toLocalDateTime());
         }
-        int cmp = Jdk8Methods.compareLongs(toEpochSecond(), other.toEpochSecond());
+        int cmp = Long.compare(toEpochSecond(), other.toEpochSecond());
         if (cmp == 0) {
             cmp = toLocalTime().getNano() - other.toLocalTime().getNano();
             if (cmp == 0) {
@@ -1685,8 +1687,8 @@ public final class OffsetDateTime
     public boolean isAfter(OffsetDateTime other) {
         long thisEpochSec = toEpochSecond();
         long otherEpochSec = other.toEpochSecond();
-        return thisEpochSec > otherEpochSec ||
-            (thisEpochSec == otherEpochSec && toLocalTime().getNano() > other.toLocalTime().getNano());
+        return thisEpochSec > otherEpochSec
+                || (thisEpochSec == otherEpochSec && toLocalTime().getNano() > other.toLocalTime().getNano());
     }
 
     /**
@@ -1702,8 +1704,8 @@ public final class OffsetDateTime
     public boolean isBefore(OffsetDateTime other) {
         long thisEpochSec = toEpochSecond();
         long otherEpochSec = other.toEpochSecond();
-        return thisEpochSec < otherEpochSec ||
-            (thisEpochSec == otherEpochSec && toLocalTime().getNano() < other.toLocalTime().getNano());
+        return thisEpochSec < otherEpochSec
+                || (thisEpochSec == otherEpochSec && toLocalTime().getNano() < other.toLocalTime().getNano());
     }
 
     /**
@@ -1717,8 +1719,8 @@ public final class OffsetDateTime
      * @return true if the instant equals the instant of the specified date-time
      */
     public boolean isEqual(OffsetDateTime other) {
-        return toEpochSecond() == other.toEpochSecond() &&
-                toLocalTime().getNano() == other.toLocalTime().getNano();
+        return toEpochSecond() == other.toEpochSecond()
+                && toLocalTime().getNano() == other.toLocalTime().getNano();
     }
 
     //-----------------------------------------------------------------------
@@ -1787,33 +1789,7 @@ public final class OffsetDateTime
      * @throws DateTimeException if an error occurs during printing
      */
     public String format(DateTimeFormatter formatter) {
-        Jdk8Methods.requireNonNull(formatter, "formatter");
+        Objects.requireNonNull(formatter, "formatter");
         return formatter.format(this);
     }
-
-    //-----------------------------------------------------------------------
-    private Object writeReplace() {
-        return new Ser(Ser.OFFSET_DATE_TIME_TYPE, this);
-    }
-
-    /**
-     * Defend against malicious streams.
-     * @return never
-     * @throws InvalidObjectException always
-     */
-    private Object readResolve() throws ObjectStreamException {
-        throw new InvalidObjectException("Deserialization via serialization delegate");
-    }
-
-    void writeExternal(DataOutput out) throws IOException {
-        dateTime.writeExternal(out);
-        offset.writeExternal(out);
-    }
-
-    static OffsetDateTime readExternal(DataInput in) throws IOException {
-        LocalDateTime dateTime = LocalDateTime.readExternal(in);
-        ZoneOffset offset = ZoneOffset.readExternal(in);
-        return OffsetDateTime.of(dateTime, offset);
-    }
-
 }

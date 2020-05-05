@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -40,14 +55,8 @@ import static org.threeten.bp.temporal.ChronoField.MILLI_OF_SECOND;
 import static org.threeten.bp.temporal.ChronoField.NANO_OF_SECOND;
 import static org.threeten.bp.temporal.ChronoUnit.DAYS;
 import static org.threeten.bp.temporal.ChronoUnit.NANOS;
-
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.io.InvalidObjectException;
-import java.io.ObjectStreamException;
 import java.io.Serializable;
-
+import java.util.Objects;
 import org.threeten.bp.format.DateTimeFormatter;
 import org.threeten.bp.format.DateTimeParseException;
 import org.threeten.bp.jdk8.Jdk8Methods;
@@ -255,7 +264,7 @@ public final class Instant
      * @return the current instant, not null
      */
     public static Instant now(Clock clock) {
-        Jdk8Methods.requireNonNull(clock, "clock");
+        Objects.requireNonNull(clock, "clock");
         return clock.instant();
     }
 
@@ -339,8 +348,8 @@ public final class Instant
             int nanoOfSecond = temporal.get(NANO_OF_SECOND);
             return Instant.ofEpochSecond(instantSecs, nanoOfSecond);
         } catch (DateTimeException ex) {
-            throw new DateTimeException("Unable to obtain Instant from TemporalAccessor: " +
-                    temporal + ", type " + temporal.getClass().getName(), ex);
+            throw new DateTimeException("Unable to obtain Instant from TemporalAccessor: "
+                    + temporal + ", type " + temporal.getClass().getName(), ex);
         }
     }
 
@@ -420,7 +429,8 @@ public final class Instant
     @Override
     public boolean isSupported(TemporalField field) {
         if (field instanceof ChronoField) {
-            return field == INSTANT_SECONDS || field == NANO_OF_SECOND || field == MICRO_OF_SECOND || field == MILLI_OF_SECOND;
+            return field == INSTANT_SECONDS || field == NANO_OF_SECOND || field == MICRO_OF_SECOND
+                    || field == MILLI_OF_SECOND;
         }
         return field != null && field.isSupportedBy(this);
     }
@@ -635,14 +645,16 @@ public final class Instant
             switch (f) {
                 case MILLI_OF_SECOND: {
                     int nval = (int) newValue * NANOS_PER_MILLI;
-                    return (nval != nanos ? create(seconds, nval) : this);
+                    return nval != nanos ? create(seconds, nval) : this;
                 }
                 case MICRO_OF_SECOND: {
                     int nval = (int) newValue * 1000;
-                    return (nval != nanos ? create(seconds, nval) : this);
+                    return nval != nanos ? create(seconds, nval) : this;
                 }
-                case NANO_OF_SECOND: return (newValue != nanos ? create(seconds, (int) newValue) : this);
-                case INSTANT_SECONDS: return (newValue != seconds ? create(newValue, nanos) : this);
+                case NANO_OF_SECOND:
+                    return newValue != nanos ? create(seconds, (int) newValue) : this;
+                case INSTANT_SECONDS:
+                    return newValue != seconds ? create(newValue, nanos) : this;
             }
             throw new UnsupportedTemporalTypeException("Unsupported field: " + field);
         }
@@ -805,7 +817,9 @@ public final class Instant
      */
     @Override
     public Instant minus(long amountToSubtract, TemporalUnit unit) {
-        return (amountToSubtract == Long.MIN_VALUE ? plus(Long.MAX_VALUE, unit).plus(1, unit) : plus(-amountToSubtract, unit));
+        return amountToSubtract == Long.MIN_VALUE
+                ? plus(Long.MAX_VALUE, unit).plus(1, unit)
+                : plus(-amountToSubtract, unit);
     }
 
     //-----------------------------------------------------------------------
@@ -886,9 +900,9 @@ public final class Instant
             return (R) NANOS;
         }
         // inline TemporalAccessor.super.query(query) as an optimization
-        if (query == TemporalQueries.localDate() || query == TemporalQueries.localTime() ||
-                query == TemporalQueries.chronology() || query == TemporalQueries.zoneId() ||
-                query == TemporalQueries.zone() || query == TemporalQueries.offset()) {
+        if (query == TemporalQueries.localDate() || query == TemporalQueries.localTime()
+                || query == TemporalQueries.chronology() || query == TemporalQueries.zoneId()
+                || query == TemporalQueries.zone() || query == TemporalQueries.offset()) {
             return null;
         }
         return query.queryFrom(this);
@@ -978,7 +992,7 @@ public final class Instant
                 case MINUTES: return secondsUntil(end) / SECONDS_PER_MINUTE;
                 case HOURS: return secondsUntil(end) / SECONDS_PER_HOUR;
                 case HALF_DAYS: return secondsUntil(end) / (12 * SECONDS_PER_HOUR);
-                case DAYS: return secondsUntil(end) / (SECONDS_PER_DAY);
+                case DAYS: return secondsUntil(end) / SECONDS_PER_DAY;
             }
             throw new UnsupportedTemporalTypeException("Unsupported unit: " + unit);
         }
@@ -1065,7 +1079,7 @@ public final class Instant
             // that way we always stay in the valid long range
             // seconds + 1 can not overflow because it is negative
             long millis = Jdk8Methods.safeMultiply(seconds + 1, MILLIS_PER_SEC);
-            return Jdk8Methods.safeSubtract(millis, (MILLIS_PER_SEC - nanos / NANOS_PER_MILLI));
+            return Jdk8Methods.safeSubtract(millis, MILLIS_PER_SEC - nanos / NANOS_PER_MILLI);
         }
     }
 
@@ -1082,7 +1096,7 @@ public final class Instant
      */
     @Override
     public int compareTo(Instant otherInstant) {
-        int cmp = Jdk8Methods.compareLongs(seconds, otherInstant.seconds);
+        int cmp = Long.compare(seconds, otherInstant.seconds);
         if (cmp != 0) {
             return cmp;
         }
@@ -1131,8 +1145,7 @@ public final class Instant
         }
         if (otherInstant instanceof Instant) {
             Instant other = (Instant) otherInstant;
-            return this.seconds == other.seconds &&
-                   this.nanos == other.nanos;
+            return this.seconds == other.seconds && this.nanos == other.nanos;
         }
         return false;
     }
@@ -1159,30 +1172,4 @@ public final class Instant
     public String toString() {
         return DateTimeFormatter.ISO_INSTANT.format(this);
     }
-
-    //-----------------------------------------------------------------------
-    private Object writeReplace() {
-        return new Ser(Ser.INSTANT_TYPE, this);
-    }
-
-    /**
-     * Defend against malicious streams.
-     * @return never
-     * @throws InvalidObjectException always
-     */
-    private Object readResolve() throws ObjectStreamException {
-        throw new InvalidObjectException("Deserialization via serialization delegate");
-    }
-
-    void writeExternal(DataOutput out) throws IOException {
-        out.writeLong(seconds);
-        out.writeInt(nanos);
-    }
-
-    static Instant readExternal(DataInput in) throws IOException {
-        long seconds = in.readLong();
-        int nanos = in.readInt();
-        return Instant.ofEpochSecond(seconds, nanos);
-    }
-
 }

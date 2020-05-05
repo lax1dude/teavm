@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -40,7 +55,6 @@ import static org.threeten.bp.temporal.ChronoField.MONTH_OF_YEAR;
 import static org.threeten.bp.temporal.ChronoField.NANO_OF_SECOND;
 import static org.threeten.bp.temporal.ChronoField.SECOND_OF_MINUTE;
 import static org.threeten.bp.temporal.ChronoField.YEAR;
-
 import java.io.IOException;
 import java.text.FieldPosition;
 import java.text.Format;
@@ -52,8 +66,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-
 import org.threeten.bp.DateTimeException;
 import org.threeten.bp.Period;
 import org.threeten.bp.ZoneId;
@@ -62,7 +76,6 @@ import org.threeten.bp.chrono.Chronology;
 import org.threeten.bp.chrono.IsoChronology;
 import org.threeten.bp.format.DateTimeFormatterBuilder.CompositePrinterParser;
 import org.threeten.bp.format.DateTimeParseContext.Parsed;
-import org.threeten.bp.jdk8.Jdk8Methods;
 import org.threeten.bp.temporal.ChronoField;
 import org.threeten.bp.temporal.IsoFields;
 import org.threeten.bp.temporal.TemporalAccessor;
@@ -584,7 +597,7 @@ public final class DateTimeFormatter {
     static {
         // manually code maps to ensure correct data always used
         // (locale data can be changed by application code)
-        Map<Long, String> dow = new HashMap<Long, String>();
+        Map<Long, String> dow = new HashMap<>();
         dow.put(1L, "Mon");
         dow.put(2L, "Tue");
         dow.put(3L, "Wed");
@@ -592,7 +605,7 @@ public final class DateTimeFormatter {
         dow.put(5L, "Fri");
         dow.put(6L, "Sat");
         dow.put(7L, "Sun");
-        Map<Long, String> moy = new HashMap<Long, String>();
+        Map<Long, String> moy = new HashMap<>();
         moy.put(1L, "Jan");
         moy.put(2L, "Feb");
         moy.put(3L, "Mar");
@@ -808,7 +821,7 @@ public final class DateTimeFormatter {
      * @return the date formatter, not null
      */
     public static DateTimeFormatter ofLocalizedDate(FormatStyle dateStyle) {
-        Jdk8Methods.requireNonNull(dateStyle, "dateStyle");
+        Objects.requireNonNull(dateStyle, "dateStyle");
         return new DateTimeFormatterBuilder().appendLocalized(dateStyle, null)
                         .toFormatter().withChronology(IsoChronology.INSTANCE);
     }
@@ -832,7 +845,7 @@ public final class DateTimeFormatter {
      * @return the time formatter, not null
      */
     public static DateTimeFormatter ofLocalizedTime(FormatStyle timeStyle) {
-        Jdk8Methods.requireNonNull(timeStyle, "timeStyle");
+        Objects.requireNonNull(timeStyle, "timeStyle");
         return new DateTimeFormatterBuilder().appendLocalized(null, timeStyle)
                         .toFormatter().withChronology(IsoChronology.INSTANCE);
     }
@@ -856,7 +869,7 @@ public final class DateTimeFormatter {
      * @return the date-time formatter, not null
      */
     public static DateTimeFormatter ofLocalizedDateTime(FormatStyle dateTimeStyle) {
-        Jdk8Methods.requireNonNull(dateTimeStyle, "dateTimeStyle");
+        Objects.requireNonNull(dateTimeStyle, "dateTimeStyle");
         return new DateTimeFormatterBuilder().appendLocalized(dateTimeStyle, dateTimeStyle)
                         .toFormatter().withChronology(IsoChronology.INSTANCE);
     }
@@ -881,8 +894,8 @@ public final class DateTimeFormatter {
      * @return the date, time or date-time formatter, not null
      */
     public static DateTimeFormatter ofLocalizedDateTime(FormatStyle dateStyle, FormatStyle timeStyle) {
-        Jdk8Methods.requireNonNull(dateStyle, "dateStyle");
-        Jdk8Methods.requireNonNull(timeStyle, "timeStyle");
+        Objects.requireNonNull(dateStyle, "dateStyle");
+        Objects.requireNonNull(timeStyle, "timeStyle");
         return new DateTimeFormatterBuilder().appendLocalized(dateStyle, timeStyle)
                         .toFormatter().withChronology(IsoChronology.INSTANCE);
     }
@@ -928,18 +941,15 @@ public final class DateTimeFormatter {
      * </pre>
      * @return a query that provides access to the excess days that were parsed
      */
-    public static final TemporalQuery<Period> parsedExcessDays() {
-        return PARSED_EXCESS_DAYS;
-    }
-    private static final TemporalQuery<Period> PARSED_EXCESS_DAYS = new TemporalQuery<Period>() {
-        public Period queryFrom(TemporalAccessor temporal) {
+    public static TemporalQuery<Period> parsedExcessDays() {
+        return temporal -> {
             if (temporal instanceof DateTimeBuilder) {
                 return ((DateTimeBuilder) temporal).excessDays;
             } else {
                 return Period.ZERO;
             }
-        }
-    };
+        };
+    }
 
     /**
      * A query that provides access to whether a leap-second was parsed.
@@ -971,18 +981,15 @@ public final class DateTimeFormatter {
      * </pre>
      * @return a query that provides access to whether a leap-second was parsed
      */
-    public static final TemporalQuery<Boolean> parsedLeapSecond() {
-        return PARSED_LEAP_SECOND;
-    }
-    private static final TemporalQuery<Boolean> PARSED_LEAP_SECOND = new TemporalQuery<Boolean>() {
-        public Boolean queryFrom(TemporalAccessor temporal) {
+    public static TemporalQuery<Boolean> parsedLeapSecond() {
+        return temporal -> {
             if (temporal instanceof DateTimeBuilder) {
                 return ((DateTimeBuilder) temporal).leapSecond;
             } else {
                 return Boolean.FALSE;
             }
-        }
-    };
+        };
+    }
 
     //-----------------------------------------------------------------------
     /**
@@ -1029,10 +1036,10 @@ public final class DateTimeFormatter {
     DateTimeFormatter(CompositePrinterParser printerParser, Locale locale,
                       DecimalStyle decimalStyle, ResolverStyle resolverStyle,
                       Set<TemporalField> resolverFields, Chronology chrono, ZoneId zone) {
-        this.printerParser = Jdk8Methods.requireNonNull(printerParser, "printerParser");
-        this.locale = Jdk8Methods.requireNonNull(locale, "locale");
-        this.decimalStyle = Jdk8Methods.requireNonNull(decimalStyle, "decimalStyle");
-        this.resolverStyle = Jdk8Methods.requireNonNull(resolverStyle, "resolverStyle");
+        this.printerParser = Objects.requireNonNull(printerParser, "printerParser");
+        this.locale = Objects.requireNonNull(locale, "locale");
+        this.decimalStyle = Objects.requireNonNull(decimalStyle, "decimalStyle");
+        this.resolverStyle = Objects.requireNonNull(resolverStyle, "resolverStyle");
         this.resolverFields = resolverFields;
         this.chrono = chrono;
         this.zone = zone;
@@ -1133,7 +1140,7 @@ public final class DateTimeFormatter {
      * @return a formatter based on this formatter with the requested override chronology, not null
      */
     public DateTimeFormatter withChronology(Chronology chrono) {
-        if (Jdk8Methods.equals(this.chrono, chrono)) {
+        if (Objects.equals(this.chrono, chrono)) {
             return this;
         }
         return new DateTimeFormatter(printerParser, locale, decimalStyle, resolverStyle, resolverFields, chrono, zone);
@@ -1180,7 +1187,7 @@ public final class DateTimeFormatter {
      * @return a formatter based on this formatter with the requested override zone, not null
      */
     public DateTimeFormatter withZone(ZoneId zone) {
-        if (Jdk8Methods.equals(this.zone, zone)) {
+        if (Objects.equals(this.zone, zone)) {
             return this;
         }
         return new DateTimeFormatter(printerParser, locale, decimalStyle, resolverStyle, resolverFields, chrono, zone);
@@ -1221,8 +1228,8 @@ public final class DateTimeFormatter {
      * @return a formatter based on this formatter with the requested resolver style, not null
      */
     public DateTimeFormatter withResolverStyle(ResolverStyle resolverStyle) {
-        Jdk8Methods.requireNonNull(resolverStyle, "resolverStyle");
-        if (Jdk8Methods.equals(this.resolverStyle, resolverStyle)) {
+        Objects.requireNonNull(resolverStyle, "resolverStyle");
+        if (Objects.equals(this.resolverStyle, resolverStyle)) {
             return this;
         }
         return new DateTimeFormatter(printerParser, locale, decimalStyle, resolverStyle, resolverFields, chrono, zone);
@@ -1286,8 +1293,8 @@ public final class DateTimeFormatter {
         if (resolverFields == null) {
             return new DateTimeFormatter(printerParser, locale, decimalStyle, resolverStyle, null, chrono, zone);
         }
-        Set<TemporalField> fields = new HashSet<TemporalField>(Arrays.asList(resolverFields));
-        if (Jdk8Methods.equals(this.resolverFields, fields)) {
+        Set<TemporalField> fields = new HashSet<>(Arrays.asList(resolverFields));
+        if (Objects.equals(this.resolverFields, fields)) {
             return this;
         }
         fields = Collections.unmodifiableSet(fields);
@@ -1337,10 +1344,10 @@ public final class DateTimeFormatter {
         if (resolverFields == null) {
             return new DateTimeFormatter(printerParser, locale, decimalStyle, resolverStyle, null, chrono, zone);
         }
-        if (Jdk8Methods.equals(this.resolverFields, resolverFields)) {
+        if (Objects.equals(this.resolverFields, resolverFields)) {
             return this;
         }
-        resolverFields = Collections.unmodifiableSet(new HashSet<TemporalField>(resolverFields));
+        resolverFields = Collections.unmodifiableSet(new HashSet<>(resolverFields));
         return new DateTimeFormatter(printerParser, locale, decimalStyle, resolverStyle, resolverFields, chrono, zone);
     }
 
@@ -1377,8 +1384,8 @@ public final class DateTimeFormatter {
      * @throws DateTimeException if an error occurs during formatting
      */
     public void formatTo(TemporalAccessor temporal, Appendable appendable) {
-        Jdk8Methods.requireNonNull(temporal, "temporal");
-        Jdk8Methods.requireNonNull(appendable, "appendable");
+        Objects.requireNonNull(temporal, "temporal");
+        Objects.requireNonNull(appendable, "appendable");
         try {
             DateTimePrintContext context = new DateTimePrintContext(temporal, this);
             if (appendable instanceof StringBuilder) {
@@ -1411,7 +1418,7 @@ public final class DateTimeFormatter {
      * @throws DateTimeParseException if unable to parse the requested result
      */
     public TemporalAccessor parse(CharSequence text) {
-        Jdk8Methods.requireNonNull(text, "text");
+        Objects.requireNonNull(text, "text");
         try {
             return parseToBuilder(text, null).resolve(resolverStyle, resolverFields);
         } catch (DateTimeParseException ex) {
@@ -1452,8 +1459,8 @@ public final class DateTimeFormatter {
      * @throws IndexOutOfBoundsException if the position is invalid
      */
     public TemporalAccessor parse(CharSequence text, ParsePosition position) {
-        Jdk8Methods.requireNonNull(text, "text");
-        Jdk8Methods.requireNonNull(position, "position");
+        Objects.requireNonNull(text, "text");
+        Objects.requireNonNull(position, "position");
         try {
             return parseToBuilder(text, position).resolve(resolverStyle, resolverFields);
         } catch (DateTimeParseException ex) {
@@ -1485,8 +1492,8 @@ public final class DateTimeFormatter {
      * @throws DateTimeParseException if unable to parse the requested result
      */
     public <T> T parse(CharSequence text, TemporalQuery<T> type) {
-        Jdk8Methods.requireNonNull(text, "text");
-        Jdk8Methods.requireNonNull(type, "type");
+        Objects.requireNonNull(text, "text");
+        Objects.requireNonNull(type, "type");
         try {
             DateTimeBuilder builder = parseToBuilder(text, null).resolve(resolverStyle, resolverFields);
             return builder.build(type);
@@ -1527,8 +1534,8 @@ public final class DateTimeFormatter {
      * @throws DateTimeParseException if unable to parse the requested result
      */
     public TemporalAccessor parseBest(CharSequence text, TemporalQuery<?>... types) {
-        Jdk8Methods.requireNonNull(text, "text");
-        Jdk8Methods.requireNonNull(types, "types");
+        Objects.requireNonNull(text, "text");
+        Objects.requireNonNull(types, "types");
         if (types.length < 2) {
             throw new IllegalArgumentException("At least two types must be specified");
         }
@@ -1541,7 +1548,8 @@ public final class DateTimeFormatter {
                     // continue
                 }
             }
-            throw new DateTimeException("Unable to convert parsed text to any specified type: " + Arrays.toString(types));
+            throw new DateTimeException("Unable to convert parsed text to any specified type: "
+                    + Arrays.toString(types));
         } catch (DateTimeParseException ex) {
             throw ex;
         } catch (RuntimeException ex) {
@@ -1574,7 +1582,7 @@ public final class DateTimeFormatter {
      * @throws DateTimeParseException if the parse fails
      */
     private DateTimeBuilder parseToBuilder(final CharSequence text, final ParsePosition position) {
-        ParsePosition pos = (position != null ? position : new ParsePosition(0));
+        ParsePosition pos = position != null ? position : new ParsePosition(0);
         Parsed result = parseUnresolved0(text, pos);
         if (result == null || pos.getErrorIndex() >= 0 || (position == null && pos.getIndex() < text.length())) {
             String abbr = "";
@@ -1584,11 +1592,12 @@ public final class DateTimeFormatter {
                 abbr = text.toString();
             }
             if (pos.getErrorIndex() >= 0) {
-                throw new DateTimeParseException("Text '" + abbr + "' could not be parsed at index " +
-                        pos.getErrorIndex(), text, pos.getErrorIndex());
+                throw new DateTimeParseException("Text '" + abbr + "' could not be parsed at index "
+                        + pos.getErrorIndex(), text, pos.getErrorIndex());
             } else {
-                throw new DateTimeParseException("Text '" + abbr + "' could not be parsed, unparsed text found at index " +
-                        pos.getIndex(), text, pos.getIndex());
+                throw new DateTimeParseException("Text '" + abbr
+                        + "' could not be parsed, unparsed text found at index "
+                        + pos.getIndex(), text, pos.getIndex());
             }
         }
         return result.toBuilder();
@@ -1638,8 +1647,8 @@ public final class DateTimeFormatter {
     }
 
     private Parsed parseUnresolved0(CharSequence text, ParsePosition position) {
-        Jdk8Methods.requireNonNull(text, "text");
-        Jdk8Methods.requireNonNull(position, "position");
+        Objects.requireNonNull(text, "text");
+        Objects.requireNonNull(position, "position");
         DateTimeParseContext context = new DateTimeParseContext(this);
         int pos = position.getIndex();
         pos = printerParser.parse(context, text, pos);
@@ -1696,7 +1705,7 @@ public final class DateTimeFormatter {
      * @return this formatter as a classic format instance, not null
      */
     public Format toFormat(TemporalQuery<?> query) {
-        Jdk8Methods.requireNonNull(query, "query");
+        Objects.requireNonNull(query, "query");
         return new ClassicFormat(this, query);
     }
 
@@ -1731,10 +1740,10 @@ public final class DateTimeFormatter {
 
         @Override
         public StringBuffer format(Object obj, StringBuffer toAppendTo, FieldPosition pos) {
-            Jdk8Methods.requireNonNull(obj, "obj");
-            Jdk8Methods.requireNonNull(toAppendTo, "toAppendTo");
-            Jdk8Methods.requireNonNull(pos, "pos");
-            if (obj instanceof TemporalAccessor == false) {
+            Objects.requireNonNull(obj, "obj");
+            Objects.requireNonNull(toAppendTo, "toAppendTo");
+            Objects.requireNonNull(pos, "pos");
+            if (!(obj instanceof TemporalAccessor)) {
                 throw new IllegalArgumentException("Format target must implement TemporalAccessor");
             }
             pos.setBeginIndex(0);
@@ -1748,11 +1757,11 @@ public final class DateTimeFormatter {
         }
         @Override
         public Object parseObject(String text) throws ParseException {
-            Jdk8Methods.requireNonNull(text, "text");
+            Objects.requireNonNull(text, "text");
             try {
                 if (query == null) {
                     return formatter.parseToBuilder(text, null)
-                                    .resolve(formatter.getResolverStyle(), formatter.getResolverFields());
+                            .resolve(formatter.getResolverStyle(), formatter.getResolverFields());
                 }
                 return formatter.parse(text, query);
             } catch (DateTimeParseException ex) {
@@ -1763,7 +1772,7 @@ public final class DateTimeFormatter {
         }
         @Override
         public Object parseObject(String text, ParsePosition pos) {
-            Jdk8Methods.requireNonNull(text, "text");
+            Objects.requireNonNull(text, "text");
             Parsed unresolved;
             try {
                 unresolved = formatter.parseUnresolved0(text, pos);
@@ -1781,7 +1790,7 @@ public final class DateTimeFormatter {
             }
             try {
                 DateTimeBuilder builder = unresolved.toBuilder()
-                                .resolve(formatter.getResolverStyle(), formatter.getResolverFields());
+                        .resolve(formatter.getResolverStyle(), formatter.getResolverFields());
                 if (query == null) {
                     return builder;
                 }

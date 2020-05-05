@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -31,15 +46,9 @@
  */
 package org.threeten.bp;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.io.InvalidObjectException;
-import java.io.ObjectStreamException;
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.regex.Pattern;
-
-import org.threeten.bp.jdk8.Jdk8Methods;
 import org.threeten.bp.zone.ZoneRules;
 import org.threeten.bp.zone.ZoneRulesException;
 import org.threeten.bp.zone.ZoneRulesProvider;
@@ -105,8 +114,8 @@ final class ZoneRegion extends ZoneId implements Serializable {
         if (zoneId.equals("UTC") || zoneId.equals("GMT") || zoneId.equals("UT")) {
             return new ZoneRegion(zoneId, ZoneOffset.UTC.getRules());
         }
-        if (zoneId.startsWith("UTC+") || zoneId.startsWith("GMT+") ||
-                zoneId.startsWith("UTC-") || zoneId.startsWith("GMT-")) {
+        if (zoneId.startsWith("UTC+") || zoneId.startsWith("GMT+")
+                || zoneId.startsWith("UTC-") || zoneId.startsWith("GMT-")) {
             ZoneOffset offset = ZoneOffset.of(zoneId.substring(3));
             if (offset.getTotalSeconds() == 0) {
                 return new ZoneRegion(zoneId.substring(0, 3), offset.getRules());
@@ -133,8 +142,8 @@ final class ZoneRegion extends ZoneId implements Serializable {
      * @throws DateTimeException if checking availability and the ID cannot be found
      */
     static ZoneRegion ofId(String zoneId, boolean checkAvailable) {
-        Jdk8Methods.requireNonNull(zoneId, "zoneId");
-        if (zoneId.length() < 2 || PATTERN.matcher(zoneId).matches() == false) {
+        Objects.requireNonNull(zoneId, "zoneId");
+        if (zoneId.length() < 2 || !PATTERN.matcher(zoneId).matches()) {
             throw new DateTimeException("Invalid ID for region-based ZoneId, invalid format: " + zoneId);
         }
         ZoneRules rules = null;
@@ -174,36 +183,6 @@ final class ZoneRegion extends ZoneId implements Serializable {
     public ZoneRules getRules() {
         // additional query for group provider when null allows for possibility
         // that the provider was added after the ZoneId was created
-        return (rules != null ? rules : ZoneRulesProvider.getRules(id, false));
+        return rules != null ? rules : ZoneRulesProvider.getRules(id, false);
     }
-
-    //-----------------------------------------------------------------------
-    private Object writeReplace() {
-        return new Ser(Ser.ZONE_REGION_TYPE, this);
-    }
-
-    /**
-     * Defend against malicious streams.
-     * @return never
-     * @throws InvalidObjectException always
-     */
-    private Object readResolve() throws ObjectStreamException {
-        throw new InvalidObjectException("Deserialization via serialization delegate");
-    }
-
-    @Override
-    void write(DataOutput out) throws IOException {
-        out.writeByte(Ser.ZONE_REGION_TYPE);
-        writeExternal(out);
-    }
-
-    void writeExternal(DataOutput out) throws IOException {
-        out.writeUTF(id);
-    }
-
-    static ZoneId readExternal(DataInput in) throws IOException {
-        String id = in.readUTF();
-        return ofLenient(id);
-    }
-
 }

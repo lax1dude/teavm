@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -47,90 +62,6 @@ public final class Jdk8Methods {
      * Private constructor since this is a utility class.
      */
     private Jdk8Methods() {
-    }
-
-    //-----------------------------------------------------------------------
-    /**
-     * Ensures that the argument is non-null.
-     *
-     * @param <T>  the value type
-     * @param value  the value to check
-     * @return the checked non-null value
-     * @throws NullPointerException if the value is null
-     */
-    public static <T> T requireNonNull(T value) {
-        if (value == null) {
-            throw new NullPointerException("Value must not be null");
-        }
-        return value;
-    }
-
-    /**
-     * Ensures that the argument is non-null.
-     *
-     * @param <T>  the value type
-     * @param value  the value to check
-     * @param parameterName  the name of the parameter
-     * @return the checked non-null value
-     * @throws NullPointerException if the value is null
-     */
-    public static <T> T requireNonNull(T value, String parameterName) {
-        if (value == null) {
-            throw new NullPointerException(parameterName + " must not be null");
-        }
-        return value;
-    }
-
-    //-----------------------------------------------------------------------
-    /**
-     * Compares two objects.
-     *
-     * @param a  the first value
-     * @param b  the second value
-     * @return the result
-     */
-    public static boolean equals(Object a, Object b) {
-        if (a == null) {
-            return b == null;
-        }
-        if (b == null) {
-            return false;
-        }
-        return a.equals(b);
-    }
-
-    /**
-     * Compares two ints.
-     *
-     * @param a  the first value
-     * @param b  the second value
-     * @return the result
-     */
-    public static int compareInts(int a, int b) {
-        if (a < b) {
-            return -1;
-        }
-        if (a > b) {
-            return 1;
-        }
-        return 0;
-    }
-
-    /**
-     * Compares two longs.
-     *
-     * @param a  the first value
-     * @param b  the second value
-     * @return the result
-     */
-    public static int compareLongs(long a, long b) {
-        if (a < b) {
-            return -1;
-        }
-        if (a > b) {
-            return 1;
-        }
-        return 0;
     }
 
     //-----------------------------------------------------------------------
@@ -303,7 +234,7 @@ public final class Jdk8Methods {
      * @return the floor division
      */
     public static long floorDiv(long a, long b) {
-        return (a >= 0 ? a / b : ((a + 1) / b) - 1);
+        return a >= 0 ? a / b : ((a + 1) / b) - 1;
     }
 
     /**
@@ -358,7 +289,7 @@ public final class Jdk8Methods {
      * @return the floor division
      */
     public static int floorDiv(int a, int b) {
-        return (a >= 0 ? a / b : ((a + 1) / b) - 1);
+        return a >= 0 ? a / b : ((a + 1) / b) - 1;
     }
 
     /**

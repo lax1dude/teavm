@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -42,14 +57,8 @@ import static org.threeten.bp.temporal.ChronoUnit.ERAS;
 import static org.threeten.bp.temporal.ChronoUnit.MILLENNIA;
 import static org.threeten.bp.temporal.ChronoUnit.MONTHS;
 import static org.threeten.bp.temporal.ChronoUnit.YEARS;
-
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.io.InvalidObjectException;
-import java.io.ObjectStreamException;
 import java.io.Serializable;
-
+import java.util.Objects;
 import org.threeten.bp.chrono.Chronology;
 import org.threeten.bp.chrono.IsoChronology;
 import org.threeten.bp.format.DateTimeFormatter;
@@ -173,7 +182,7 @@ public final class YearMonth
      * @throws DateTimeException if the year value is invalid
      */
     public static YearMonth of(int year, Month month) {
-        Jdk8Methods.requireNonNull(month, "month");
+        Objects.requireNonNull(month, "month");
         return of(year, month.getValue());
     }
 
@@ -215,13 +224,13 @@ public final class YearMonth
             return (YearMonth) temporal;
         }
         try {
-            if (IsoChronology.INSTANCE.equals(Chronology.from(temporal)) == false) {
+            if (!IsoChronology.INSTANCE.equals(Chronology.from(temporal))) {
                 temporal = LocalDate.from(temporal);
             }
             return of(temporal.get(YEAR), temporal.get(MONTH_OF_YEAR));
         } catch (DateTimeException ex) {
-            throw new DateTimeException("Unable to obtain YearMonth from TemporalAccessor: " +
-                    temporal + ", type " + temporal.getClass().getName());
+            throw new DateTimeException("Unable to obtain YearMonth from TemporalAccessor: "
+                    + temporal + ", type " + temporal.getClass().getName());
         }
     }
 
@@ -252,7 +261,7 @@ public final class YearMonth
      * @throws DateTimeParseException if the text cannot be parsed
      */
     public static YearMonth parse(CharSequence text, DateTimeFormatter formatter) {
-        Jdk8Methods.requireNonNull(formatter, "formatter");
+        Objects.requireNonNull(formatter, "formatter");
         return formatter.parse(text, YearMonth::from);
     }
 
@@ -315,8 +324,8 @@ public final class YearMonth
     @Override
     public boolean isSupported(TemporalField field) {
         if (field instanceof ChronoField) {
-            return field == YEAR || field == MONTH_OF_YEAR ||
-                    field == PROLEPTIC_MONTH || field == YEAR_OF_ERA || field == ERA;
+            return field == YEAR || field == MONTH_OF_YEAR
+                    || field == PROLEPTIC_MONTH || field == YEAR_OF_ERA || field == ERA;
         }
         return field != null && field.isSupportedBy(this);
     }
@@ -324,7 +333,8 @@ public final class YearMonth
     @Override
     public boolean isSupported(TemporalUnit unit) {
         if (unit instanceof ChronoUnit) {
-            return unit == MONTHS || unit == YEARS || unit == DECADES || unit == CENTURIES || unit == MILLENNIA || unit == ERAS;
+            return unit == MONTHS || unit == YEARS || unit == DECADES || unit == CENTURIES || unit == MILLENNIA
+                    || unit == ERAS;
         }
         return unit != null && unit.isSupportedBy(this);
     }
@@ -354,7 +364,7 @@ public final class YearMonth
     @Override
     public ValueRange range(TemporalField field) {
         if (field == YEAR_OF_ERA) {
-            return (getYear() <= 0 ? ValueRange.of(1, Year.MAX_VALUE + 1) : ValueRange.of(1, Year.MAX_VALUE));
+            return getYear() <= 0 ? ValueRange.of(1, Year.MAX_VALUE + 1) : ValueRange.of(1, Year.MAX_VALUE);
         }
         return Temporal.super.range(field);
     }
@@ -416,9 +426,9 @@ public final class YearMonth
             switch ((ChronoField) field) {
                 case MONTH_OF_YEAR: return month;
                 case PROLEPTIC_MONTH: return getProlepticMonth();
-                case YEAR_OF_ERA: return (year < 1 ? 1 - year : year);
+                case YEAR_OF_ERA: return year < 1 ? 1 - year : year;
                 case YEAR: return year;
-                case ERA: return (year < 1 ? 0 : 1);
+                case ERA: return year < 1 ? 0 : 1;
             }
             throw new UnsupportedTemporalTypeException("Unsupported field: " + field);
         }
@@ -527,7 +537,7 @@ public final class YearMonth
      * @return 366 if the year is leap, 365 otherwise
      */
     public int lengthOfYear() {
-        return (isLeapYear() ? 366 : 365);
+        return isLeapYear() ? 366 : 365;
     }
 
     //-----------------------------------------------------------------------
@@ -615,7 +625,7 @@ public final class YearMonth
                 case PROLEPTIC_MONTH: return plusMonths(newValue - getLong(PROLEPTIC_MONTH));
                 case YEAR_OF_ERA: return withYear((int) (year < 1 ? 1 - newValue : newValue));
                 case YEAR: return withYear((int) newValue);
-                case ERA: return (getLong(ERA) == newValue ? this : withYear(1 - year));
+                case ERA: return getLong(ERA) == newValue ? this : withYear(1 - year);
             }
             throw new UnsupportedTemporalTypeException("Unsupported field: " + field);
         }
@@ -760,7 +770,9 @@ public final class YearMonth
      */
     @Override
     public YearMonth minus(long amountToSubtract, TemporalUnit unit) {
-        return (amountToSubtract == Long.MIN_VALUE ? plus(Long.MAX_VALUE, unit).plus(1, unit) : plus(-amountToSubtract, unit));
+        return amountToSubtract == Long.MIN_VALUE
+                ? plus(Long.MAX_VALUE, unit).plus(1, unit)
+                : plus(-amountToSubtract, unit);
     }
 
     /**
@@ -773,7 +785,9 @@ public final class YearMonth
      * @throws DateTimeException if the result exceeds the supported range
      */
     public YearMonth minusYears(long yearsToSubtract) {
-        return (yearsToSubtract == Long.MIN_VALUE ? plusYears(Long.MAX_VALUE).plusYears(1) : plusYears(-yearsToSubtract));
+        return yearsToSubtract == Long.MIN_VALUE
+                ? plusYears(Long.MAX_VALUE).plusYears(1)
+                : plusYears(-yearsToSubtract);
     }
 
     /**
@@ -786,7 +800,9 @@ public final class YearMonth
      * @throws DateTimeException if the result exceeds the supported range
      */
     public YearMonth minusMonths(long monthsToSubtract) {
-        return (monthsToSubtract == Long.MIN_VALUE ? plusMonths(Long.MAX_VALUE).plusMonths(1) : plusMonths(-monthsToSubtract));
+        return monthsToSubtract == Long.MIN_VALUE
+                ? plusMonths(Long.MAX_VALUE).plusMonths(1)
+                : plusMonths(-monthsToSubtract);
     }
 
     //-----------------------------------------------------------------------
@@ -815,8 +831,9 @@ public final class YearMonth
             return (R) IsoChronology.INSTANCE;
         } else if (query == TemporalQueries.precision()) {
             return (R) MONTHS;
-        } else if (query == TemporalQueries.localDate() || query == TemporalQueries.localTime() ||
-                query == TemporalQueries.zone() || query == TemporalQueries.zoneId() || query == TemporalQueries.offset()) {
+        } else if (query == TemporalQueries.localDate() || query == TemporalQueries.localTime()
+                || query == TemporalQueries.zone() || query == TemporalQueries.zoneId()
+                || query == TemporalQueries.offset()) {
             return null;
         }
         return Temporal.super.query(query);
@@ -850,7 +867,7 @@ public final class YearMonth
      */
     @Override
     public Temporal adjustInto(Temporal temporal) {
-        if (Chronology.from(temporal).equals(IsoChronology.INSTANCE) == false) {
+        if (!Chronology.from(temporal).equals(IsoChronology.INSTANCE)) {
             throw new DateTimeException("Adjustment only supported on ISO date-time");
         }
         return temporal.with(PROLEPTIC_MONTH, getProlepticMonth());
@@ -969,9 +986,9 @@ public final class YearMonth
      */
     @Override
     public int compareTo(YearMonth other) {
-        int cmp = (year - other.year);
+        int cmp = year - other.year;
         if (cmp == 0) {
-            cmp = (month - other.month);
+            cmp = month - other.month;
         }
         return cmp;
     }
@@ -1064,33 +1081,7 @@ public final class YearMonth
      * @throws DateTimeException if an error occurs during printing
      */
     public String format(DateTimeFormatter formatter) {
-        Jdk8Methods.requireNonNull(formatter, "formatter");
+        Objects.requireNonNull(formatter, "formatter");
         return formatter.format(this);
     }
-
-    //-----------------------------------------------------------------------
-    private Object writeReplace() {
-        return new Ser(Ser.YEAR_MONTH_TYPE, this);
-    }
-
-    /**
-     * Defend against malicious streams.
-     * @return never
-     * @throws InvalidObjectException always
-     */
-    private Object readResolve() throws ObjectStreamException {
-        throw new InvalidObjectException("Deserialization via serialization delegate");
-    }
-
-    void writeExternal(DataOutput out) throws IOException {
-        out.writeInt(year);
-        out.writeByte(month);
-    }
-
-    static YearMonth readExternal(DataInput in) throws IOException {
-        int year = in.readInt();
-        byte month = in.readByte();
-        return YearMonth.of(year, month);
-    }
-
 }

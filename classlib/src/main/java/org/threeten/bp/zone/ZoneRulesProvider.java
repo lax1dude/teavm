@@ -1,4 +1,19 @@
 /*
+ *  Copyright 2020 Alexey Andreev.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
  * Copyright (c) 2007-present, Stephen Colebourne & Michael Nascimento Santos
  *
  * All rights reserved.
@@ -37,15 +52,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-
 import org.threeten.bp.DateTimeException;
 import org.threeten.bp.ZoneId;
 import org.threeten.bp.ZonedDateTime;
-import org.threeten.bp.jdk8.Jdk8Methods;
 
 /**
  * Provider of time-zone rules to the system.
@@ -123,7 +134,7 @@ public abstract class ZoneRulesProvider {
      * @throws ZoneRulesException if rules cannot be obtained for the zone ID
      */
     public static ZoneRules getRules(String zoneId, boolean forCaching) {
-        Jdk8Methods.requireNonNull(zoneId, "zoneId");
+        Objects.requireNonNull(zoneId, "zoneId");
         return getProvider(zoneId).provideRules(zoneId, forCaching);
     }
 
@@ -152,7 +163,7 @@ public abstract class ZoneRulesProvider {
      * @throws ZoneRulesException if history cannot be obtained for the zone ID
      */
     public static NavigableMap<String, ZoneRules> getVersions(String zoneId) {
-        Jdk8Methods.requireNonNull(zoneId, "zoneId");
+        Objects.requireNonNull(zoneId, "zoneId");
         return getProvider(zoneId).provideVersions(zoneId);
     }
 
@@ -191,7 +202,7 @@ public abstract class ZoneRulesProvider {
      * @throws ZoneRulesException if a region is already registered
      */
     public static void registerProvider(ZoneRulesProvider provider) {
-        Jdk8Methods.requireNonNull(provider, "provider");
+        Objects.requireNonNull(provider, "provider");
         registerProvider0(provider);
         PROVIDERS.add(provider);
     }
@@ -204,12 +215,12 @@ public abstract class ZoneRulesProvider {
      */
     private static void registerProvider0(ZoneRulesProvider provider) {
         for (String zoneId : provider.provideZoneIds()) {
-            Jdk8Methods.requireNonNull(zoneId, "zoneId");
+            Objects.requireNonNull(zoneId, "zoneId");
             ZoneRulesProvider old = ZONES.putIfAbsent(zoneId, provider);
             if (old != null) {
                 throw new ZoneRulesException(
-                    "Unable to register zone as one already registered with that ID: " + zoneId +
-                    ", currently loading from provider: " + provider);
+                        "Unable to register zone as one already registered with that ID: " + zoneId
+                                + ", currently loading from provider: " + provider);
             }
         }
     }
