@@ -116,17 +116,6 @@ public final class Year
     public static final int MAX_VALUE = 999999999;
 
     /**
-     * Serialization version.
-     */
-    private static final long serialVersionUID = -23038383694477807L;
-    /**
-     * Parser.
-     */
-    private static final DateTimeFormatter PARSER = new DateTimeFormatterBuilder()
-        .appendValue(YEAR, 4, 10, SignStyle.EXCEEDS_PAD)
-        .toFormatter();
-
-    /**
      * The year being represented.
      */
     private final int year;
@@ -243,7 +232,10 @@ public final class Year
      * @throws DateTimeParseException if the text cannot be parsed
      */
     public static Year parse(CharSequence text) {
-        return parse(text, PARSER);
+        // TODO: Get rid of DateTimeFormatterBuilder
+        return parse(text, new DateTimeFormatterBuilder()
+                .appendValue(YEAR, 4, 10, SignStyle.EXCEEDS_PAD)
+                .toFormatter());
     }
 
     /**

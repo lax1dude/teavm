@@ -48,7 +48,6 @@ package org.threeten.bp;
 
 import java.io.Serializable;
 import java.util.Objects;
-import java.util.regex.Pattern;
 import org.threeten.bp.zone.ZoneRules;
 import org.threeten.bp.zone.ZoneRulesException;
 import org.threeten.bp.zone.ZoneRulesProvider;
@@ -77,10 +76,6 @@ final class ZoneRegion extends ZoneId implements Serializable {
      * Serialization version.
      */
     private static final long serialVersionUID = 8386373296231747096L;
-    /**
-     * The regex pattern for region IDs.
-     */
-    private static final Pattern PATTERN = Pattern.compile("[A-Za-z][A-Za-z0-9~/._+-]+");
 
     /**
      * The time-zone ID, not null.
@@ -143,7 +138,7 @@ final class ZoneRegion extends ZoneId implements Serializable {
      */
     static ZoneRegion ofId(String zoneId, boolean checkAvailable) {
         Objects.requireNonNull(zoneId, "zoneId");
-        if (zoneId.length() < 2 || !PATTERN.matcher(zoneId).matches()) {
+        if (!isValidId(zoneId)) {
             throw new DateTimeException("Invalid ID for region-based ZoneId, invalid format: " + zoneId);
         }
         ZoneRules rules = null;
@@ -159,6 +154,39 @@ final class ZoneRegion extends ZoneId implements Serializable {
             }
         }
         return new ZoneRegion(zoneId, rules);
+    }
+
+    private static boolean isValidId(String id) {
+        if (id.length() < 2) {
+            return false;
+        }
+        if (!isIdStart(id.charAt(0))) {
+            return false;
+        }
+        for (int i = 1; i < id.length(); ++i) {
+            if (!isIdPart(id.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean isIdPart(char c) {
+        switch (c) {
+            case '~':
+            case '/':
+            case '.':
+            case '_':
+            case '+':
+            case '-':
+                return true;
+            default:
+                return isIdStart(c) || c >= '0' && c <= '9';
+        }
+    }
+
+    private static boolean isIdStart(char c) {
+        return c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z';
     }
 
     //-------------------------------------------------------------------------
