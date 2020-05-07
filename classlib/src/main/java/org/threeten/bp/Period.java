@@ -329,7 +329,7 @@ public final class Period
         private boolean hasOneField;
         private int parsedNumber;
 
-        public Parser(CharSequence text) {
+        Parser(CharSequence text) {
             this.text = text;
         }
 
@@ -396,11 +396,13 @@ public final class Period
         }
 
         boolean sign() {
-            if (text.charAt(ptr) == '-') {
-                ptr++;
-                return true;
-            } else if (text.charAt(ptr) == '+') {
-                ptr++;
+            if (!eof()) {
+                if (text.charAt(ptr) == '-') {
+                    ptr++;
+                    return true;
+                } else if (text.charAt(ptr) == '+') {
+                    ptr++;
+                }
             }
             return false;
         }
@@ -414,6 +416,7 @@ public final class Period
                 if (c < '0' || c >= '9') {
                     break;
                 }
+                ++ptr;
                 hasDigits = true;
                 parsedNumber = parsedNumber * 10 + c - '0';
             }
