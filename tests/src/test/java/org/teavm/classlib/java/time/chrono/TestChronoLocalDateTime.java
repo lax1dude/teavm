@@ -53,7 +53,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.chrono.ChronoLocalDateTime;
 import java.time.chrono.Chronology;
-import java.time.chrono.HijrahChronology;
 import java.time.chrono.IsoChronology;
 import java.time.chrono.JapaneseChronology;
 import java.time.chrono.MinguoChronology;
@@ -71,6 +70,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.teavm.junit.TeaVMTestRunner;
 import org.teavm.junit.WholeClassCompilation;
@@ -91,7 +91,7 @@ public class TestChronoLocalDateTime {
     @DataProvider(name = "calendars")
     Object[][] data_of_calendars() {
         return new Chronology[][] {
-                    { HijrahChronology.INSTANCE },
+                    /*{ HijrahChronology.INSTANCE },*/
                     { IsoChronology.INSTANCE },
                     { JapaneseChronology.INSTANCE },
                     { MinguoChronology.INSTANCE },
@@ -100,6 +100,7 @@ public class TestChronoLocalDateTime {
     }
 
     @Test(dataProvider = "calendars")
+    @Ignore
     public void test_badWithAdjusterChrono(Chronology chrono) {
         LocalDate refDate = LocalDate.of(1900, 1, 1);
         ChronoLocalDateTime<?> cdt = chrono.date(refDate).atTime(LocalTime.NOON);
@@ -124,6 +125,7 @@ public class TestChronoLocalDateTime {
     }
 
     @Test(dataProvider = "calendars")
+    @Ignore
     public void test_badPlusAdjusterChrono(Chronology chrono) {
         LocalDate refDate = LocalDate.of(1900, 1, 1);
         ChronoLocalDateTime<?> cdt = chrono.date(refDate).atTime(LocalTime.NOON);
@@ -148,6 +150,7 @@ public class TestChronoLocalDateTime {
     }
 
     @Test(dataProvider = "calendars")
+    @Ignore
     public void test_badMinusAdjusterChrono(Chronology chrono) {
         LocalDate refDate = LocalDate.of(1900, 1, 1);
         ChronoLocalDateTime<?> cdt = chrono.date(refDate).atTime(LocalTime.NOON);
@@ -172,6 +175,7 @@ public class TestChronoLocalDateTime {
     }
 
     @Test(dataProvider = "calendars")
+    @Ignore
     public void test_badPlusPeriodUnitChrono(Chronology chrono) {
         LocalDate refDate = LocalDate.of(1900, 1, 1);
         ChronoLocalDateTime<?> cdt = chrono.date(refDate).atTime(LocalTime.NOON);
@@ -196,6 +200,7 @@ public class TestChronoLocalDateTime {
     }
 
     @Test(dataProvider = "calendars")
+    @Ignore
     public void test_badMinusPeriodUnitChrono(Chronology chrono) {
         LocalDate refDate = LocalDate.of(1900, 1, 1);
         ChronoLocalDateTime<?> cdt = chrono.date(refDate).atTime(LocalTime.NOON);
@@ -220,6 +225,7 @@ public class TestChronoLocalDateTime {
     }
 
     @Test(dataProvider = "calendars")
+    @Ignore
     public void test_badDateTimeFieldChrono(Chronology chrono) {
         LocalDate refDate = LocalDate.of(1900, 1, 1);
         ChronoLocalDateTime<?> cdt = chrono.date(refDate).atTime(LocalTime.NOON);
@@ -247,6 +253,7 @@ public class TestChronoLocalDateTime {
     // isBefore, isAfter, isEqual
     //-----------------------------------------------------------------------
     @Test(dataProvider = "calendars")
+    @Ignore
     public void test_datetime_comparisons(Chronology chrono) {
         List<ChronoLocalDateTime<?>> dates = new ArrayList<>();
 

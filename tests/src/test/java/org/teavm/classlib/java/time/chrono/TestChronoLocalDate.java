@@ -52,7 +52,6 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.chrono.ChronoLocalDate;
 import java.time.chrono.Chronology;
-import java.time.chrono.HijrahChronology;
 import java.time.chrono.IsoChronology;
 import java.time.chrono.JapaneseChronology;
 import java.time.chrono.MinguoChronology;
@@ -70,6 +69,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.teavm.junit.TeaVMTestRunner;
 import org.teavm.junit.WholeClassCompilation;
@@ -79,6 +79,8 @@ import org.testng.annotations.Test;
 
 /**
  * Test assertions that must be true for all built-in chronologies.
+ * TODO: TeaVM does not throw ClassCastException (this is intentional, for performance reasons).
+ * So most of the tests which expected to throw CCE are simply ignored
  */
 @Test
 @RunWith(TeaVMTestRunner.class)
@@ -90,13 +92,14 @@ public class TestChronoLocalDate {
     @DataProvider(name = "calendars")
     Object[][] data_of_calendars() {
         return new Chronology[][]{
-                    {HijrahChronology.INSTANCE},
+                    /*{HijrahChronology.INSTANCE},*/
                     {IsoChronology.INSTANCE},
                     {JapaneseChronology.INSTANCE},
                     {MinguoChronology.INSTANCE},
                     {ThaiBuddhistChronology.INSTANCE}};
     }
 
+    @Ignore
     @Test(dataProvider = "calendars")
     public void test_badWithAdjusterChrono(Chronology chrono) {
         LocalDate refDate = LocalDate.of(1900, 1, 1);
@@ -120,6 +123,7 @@ public class TestChronoLocalDate {
         }
     }
 
+    @Ignore
     @Test(dataProvider = "calendars")
     public void test_badPlusAdjusterChrono(Chronology chrono) {
         LocalDate refDate = LocalDate.of(1900, 1, 1);
@@ -143,6 +147,7 @@ public class TestChronoLocalDate {
         }
     }
 
+    @Ignore
     @Test(dataProvider = "calendars")
     public void test_badMinusAdjusterChrono(Chronology chrono) {
         LocalDate refDate = LocalDate.of(1900, 1, 1);
@@ -166,6 +171,7 @@ public class TestChronoLocalDate {
         }
     }
 
+    @Ignore
     @Test(dataProvider = "calendars")
     public void test_badPlusPeriodUnitChrono(Chronology chrono) {
         LocalDate refDate = LocalDate.of(1900, 1, 1);
@@ -190,6 +196,7 @@ public class TestChronoLocalDate {
         }
     }
 
+    @Ignore
     @Test(dataProvider = "calendars")
     public void test_badMinusPeriodUnitChrono(Chronology chrono) {
         LocalDate refDate = LocalDate.of(1900, 1, 1);
@@ -214,6 +221,7 @@ public class TestChronoLocalDate {
         }
     }
 
+    @Ignore
     @Test(dataProvider = "calendars")
     public void test_badDateTimeFieldChrono(Chronology chrono) {
         LocalDate refDate = LocalDate.of(1900, 1, 1);

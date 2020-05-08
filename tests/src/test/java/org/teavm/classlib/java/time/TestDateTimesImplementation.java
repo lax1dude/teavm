@@ -407,7 +407,8 @@ public class TestDateTimesImplementation {
             long a = values[i];
             for (int j = 0; j < values.length; j++) {
                 long b = values[j];
-                assertEquals(Long.compare(a, b), a < b ? -1 : (a > b ? 1 : 0), a + " <=> " + b);
+                int c = Long.compare(a, b);
+                assertEquals(c < 0 ? -1 : c > 0 ? 1 : 0, a < b ? -1 : (a > b ? 1 : 0), a + " <=> " + b);
             }
         }
     }

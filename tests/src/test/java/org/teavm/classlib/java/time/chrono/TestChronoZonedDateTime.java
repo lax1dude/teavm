@@ -72,6 +72,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.teavm.junit.TeaVMTestRunner;
 import org.teavm.junit.WholeClassCompilation;
@@ -92,7 +93,7 @@ public class TestChronoZonedDateTime {
     @DataProvider(name = "calendars")
     Object[][] data_of_calendars() {
         return new Chronology[][]{
-                    {HijrahChronology.INSTANCE},
+                    /*{HijrahChronology.INSTANCE},*/
                     {IsoChronology.INSTANCE},
                     {JapaneseChronology.INSTANCE},
                     {MinguoChronology.INSTANCE},
@@ -101,6 +102,7 @@ public class TestChronoZonedDateTime {
     }
 
     @Test(dataProvider = "calendars")
+    @Ignore
     public void test_badWithAdjusterChrono(Chronology chrono) {
         LocalDate refDate = LocalDate.of(1900, 1, 1);
         ChronoZonedDateTime<?> czdt = chrono.date(refDate).atTime(LocalTime.NOON).atZone(ZoneOffset.UTC);
@@ -124,6 +126,7 @@ public class TestChronoZonedDateTime {
     }
 
     @Test(dataProvider = "calendars")
+    @Ignore
     public void test_badPlusAdjusterChrono(Chronology chrono) {
         LocalDate refDate = LocalDate.of(1900, 1, 1);
         ChronoZonedDateTime<?> czdt = chrono.date(refDate).atTime(LocalTime.NOON).atZone(ZoneOffset.UTC);
@@ -148,6 +151,7 @@ public class TestChronoZonedDateTime {
     }
 
     @Test(dataProvider = "calendars")
+    @Ignore
     public void test_badMinusAdjusterChrono(Chronology chrono) {
         LocalDate refDate = LocalDate.of(1900, 1, 1);
         ChronoZonedDateTime<?> czdt = chrono.date(refDate).atTime(LocalTime.NOON).atZone(ZoneOffset.UTC);
@@ -172,6 +176,7 @@ public class TestChronoZonedDateTime {
     }
 
     @Test(dataProvider = "calendars")
+    @Ignore
     public void test_badPlusPeriodUnitChrono(Chronology chrono) {
         LocalDate refDate = LocalDate.of(1900, 1, 1);
         ChronoZonedDateTime<?> czdt = chrono.date(refDate).atTime(LocalTime.NOON).atZone(ZoneOffset.UTC);
@@ -196,6 +201,7 @@ public class TestChronoZonedDateTime {
     }
 
     @Test(dataProvider = "calendars")
+    @Ignore
     public void test_badMinusPeriodUnitChrono(Chronology chrono) {
         LocalDate refDate = LocalDate.of(1900, 1, 1);
         ChronoZonedDateTime<?> czdt = chrono.date(refDate).atTime(LocalTime.NOON).atZone(ZoneOffset.UTC);
@@ -220,6 +226,7 @@ public class TestChronoZonedDateTime {
     }
 
     @Test(dataProvider = "calendars")
+    @Ignore
     public void test_badDateTimeFieldChrono(Chronology chrono) {
         LocalDate refDate = LocalDate.of(1900, 1, 1);
         ChronoZonedDateTime<?> czdt = chrono.date(refDate).atTime(LocalTime.NOON).atZone(ZoneOffset.UTC);
@@ -248,6 +255,7 @@ public class TestChronoZonedDateTime {
     //-----------------------------------------------------------------------
     @SuppressWarnings("unused")
     @Test(dataProvider = "calendars")
+    @Ignore
     public void test_zonedDateTime_comparisons(Chronology chrono) {
         List<ChronoZonedDateTime<?>> dates = new ArrayList<>();
 

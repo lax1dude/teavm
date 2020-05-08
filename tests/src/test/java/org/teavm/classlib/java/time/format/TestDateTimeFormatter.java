@@ -518,12 +518,14 @@ public class TestDateTimeFormatter {
 
     //-------------------------------------------------------------------------
     public void test_parse_allZones() throws Exception {
-        for (String zoneStr : ZoneId.getAvailableZoneIds()) {
+        //for (String zoneStr : ZoneId.getAvailableZoneIds()) {
+            String zoneStr = "Canada/Newfoundland";
             ZoneId zone = ZoneId.of(zoneStr);
             ZonedDateTime base = ZonedDateTime.of(2014, 12, 31, 12, 0, 0, 0, zone);
+            System.out.println(base.toString());
             ZonedDateTime test = ZonedDateTime.parse(base.toString());
             assertEquals(test, base);
-        }
+        //}
     }
 
 }
