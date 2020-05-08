@@ -145,14 +145,22 @@ public class TDateFormatSymbols implements TSerializable, TCloneable {
 
     public String[] getShortWeekdays() {
         if (shortWeekdays == null) {
-            shortWeekdays = CLDRHelper.resolveShortWeekdays(locale.getLanguage(), locale.getCountry());
+            shortWeekdays = new String[8];
+            String[] cldrWeekdays = CLDRHelper.resolveShortWeekdays(locale.getLanguage(), locale.getCountry());
+            for (int i = 0; i < 7; ++i) {
+                shortWeekdays[i + 1] = cldrWeekdays[i];
+            }
         }
         return shortWeekdays.clone();
     }
 
     public String[] getWeekdays() {
         if (weekdays == null) {
-            weekdays = CLDRHelper.resolveWeekdays(locale.getLanguage(), locale.getCountry());
+            weekdays = new String[8];
+            String[] cldrWeekdays = CLDRHelper.resolveWeekdays(locale.getLanguage(), locale.getCountry());
+            for (int i = 0; i < 7; ++i) {
+                weekdays[i + 1] = cldrWeekdays[i];
+            }
         }
         return weekdays.clone();
     }

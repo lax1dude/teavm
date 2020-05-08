@@ -62,6 +62,7 @@ import java.time.chrono.HijrahChronology;
 import java.time.chrono.HijrahDate;
 import java.time.chrono.IsoChronology;
 import java.time.temporal.TemporalAdjusters;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.teavm.junit.TeaVMTestRunner;
 import org.teavm.junit.WholeClassCompilation;
@@ -81,6 +82,7 @@ public class TestHijrahChronology {
     // Chrono.ofName("Hijrah")  Lookup by name
     //-----------------------------------------------------------------------
     @Test
+    @Ignore
     public void test_chrono_byName() {
         Chronology c = HijrahChronology.INSTANCE;
         Chronology test = Chronology.of("Hijrah");
@@ -114,11 +116,13 @@ public class TestHijrahChronology {
     }
 
     @Test(dataProvider = "samples")
+    @Ignore
     public void test_toLocalDate(ChronoLocalDate hijrahDate, LocalDate iso) {
         assertEquals(LocalDate.from(hijrahDate), iso);
     }
 
     @Test(dataProvider = "samples")
+    @Ignore
     public void test_fromCalendrical(ChronoLocalDate hijrahDate, LocalDate iso) {
         assertEquals(HijrahChronology.INSTANCE.date(iso), hijrahDate);
     }
@@ -144,6 +148,7 @@ public class TestHijrahChronology {
     }
 
     @Test(dataProvider = "badDates", expectedExceptions = DateTimeException.class)
+    @Ignore
     public void test_badDates(int year, int month, int dom) {
         HijrahChronology.INSTANCE.date(year, month, dom);
     }
@@ -152,6 +157,7 @@ public class TestHijrahChronology {
     // getLong(field)
     //-----------------------------------------------------------------------
     @Test
+    @Ignore
     public void test_alignedDayOfWeekInMonth() {
         for (int dom = 1; dom <= 29; dom++) {
             HijrahDate date = HijrahChronology.INSTANCE.date(1728, 10, dom);
@@ -165,6 +171,7 @@ public class TestHijrahChronology {
     // with(WithAdjuster)
     //-----------------------------------------------------------------------
     @Test
+    @Ignore
     public void test_adjust1() {
         ChronoLocalDate base = HijrahChronology.INSTANCE.date(1728, 10, 28);
         ChronoLocalDate test = base.with(TemporalAdjusters.lastDayOfMonth());
@@ -172,6 +179,7 @@ public class TestHijrahChronology {
     }
 
     @Test
+    @Ignore
     public void test_adjust2() {
         ChronoLocalDate base = HijrahChronology.INSTANCE.date(1728, 12, 2);
         ChronoLocalDate test = base.with(TemporalAdjusters.lastDayOfMonth());
@@ -182,6 +190,7 @@ public class TestHijrahChronology {
     // HijrahDate.with(Local*)
     //-----------------------------------------------------------------------
     @Test
+    @Ignore
     public void test_adjust_toLocalDate() {
         ChronoLocalDate hijrahDate = HijrahChronology.INSTANCE.date(1726, 1, 4);
         ChronoLocalDate test = hijrahDate.with(LocalDate.of(2012, 7, 6));
@@ -189,6 +198,7 @@ public class TestHijrahChronology {
     }
 
     @Test(expectedExceptions = DateTimeException.class)
+    @Ignore
     public void test_adjust_toMonth() {
         ChronoLocalDate hijrahDate = HijrahChronology.INSTANCE.date(1726, 1, 4);
         hijrahDate.with(Month.APRIL);
@@ -198,6 +208,7 @@ public class TestHijrahChronology {
     // LocalDate.with(HijrahDate)
     //-----------------------------------------------------------------------
     @Test
+    @Ignore
     public void test_LocalDate_adjustToHijrahDate() {
         ChronoLocalDate hijrahDate = HijrahChronology.INSTANCE.date(1728, 10, 29);
         LocalDate test = LocalDate.MIN.with(hijrahDate);
@@ -205,6 +216,7 @@ public class TestHijrahChronology {
     }
 
     @Test
+    @Ignore
     public void test_LocalDateTime_adjustToHijrahDate() {
         ChronoLocalDate hijrahDate = HijrahChronology.INSTANCE.date(1728, 10, 29);
         LocalDateTime test = LocalDateTime.MIN.with(hijrahDate);
@@ -226,6 +238,7 @@ public class TestHijrahChronology {
     }
 
     @Test(dataProvider = "toString")
+    @Ignore
     public void test_toString(ChronoLocalDate hijrahDate, String expected) {
         assertEquals(hijrahDate.toString(), expected);
     }

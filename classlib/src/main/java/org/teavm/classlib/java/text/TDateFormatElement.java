@@ -117,7 +117,7 @@ abstract class TDateFormatElement {
 
         @Override
         public void format(TCalendar date, StringBuffer buffer) {
-            int weekday = date.get(TCalendar.DAY_OF_WEEK) - 1;
+            int weekday = date.get(TCalendar.DAY_OF_WEEK);
             buffer.append(abbreviated ? shortWeeks[weekday] : weeks[weekday]);
         }
 

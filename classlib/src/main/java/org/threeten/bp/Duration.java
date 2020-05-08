@@ -131,7 +131,7 @@ public final class Duration
      */
     private final int nanos;
 
-    private BigInteger getBigIntNanosPerSecond() {
+    private static BigInteger getBigIntNanosPerSecond() {
         if (bigIntNanosPerSecond == null) {
             bigIntNanosPerSecond = BigInteger.valueOf(NANOS_PER_SECOND);
         }
@@ -1048,7 +1048,7 @@ public final class Duration
      */
     private static Duration create(BigDecimal seconds) {
         BigInteger nanos = seconds.movePointRight(9).toBigIntegerExact();
-        BigInteger[] divRem = nanos.divideAndRemainder(bigIntNanosPerSecond);
+        BigInteger[] divRem = nanos.divideAndRemainder(getBigIntNanosPerSecond());
         if (divRem[0].bitLength() > 63) {
             throw new ArithmeticException("Exceeds capacity of Duration: " + nanos);
         }
