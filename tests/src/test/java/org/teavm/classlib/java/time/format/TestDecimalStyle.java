@@ -65,13 +65,6 @@ import org.testng.annotations.Test;
 @WholeClassCompilation
 public class TestDecimalStyle {
 
-    @Test
-    public void test_getAvailableLocales() {
-        Set<Locale> locales = DecimalStyle.getAvailableLocales();
-        assertEquals(locales.size() > 0, true);
-        assertEquals(locales.contains(Locale.US), true);
-    }
-
     //-----------------------------------------------------------------------
     @Test
     public void test_of_Locale() {
