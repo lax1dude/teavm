@@ -1622,5 +1622,11 @@ public class DateTimeZoneBuilder {
             }
             return filtered;
         }
+
+        @Override
+        public ZoneRules asZoneRules() {
+            initZone();
+            return zone.asZoneRules();
+        }
     }
 }
