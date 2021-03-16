@@ -46,6 +46,9 @@ abstract class TDateFormatElement {
 
     static int whichMatches(String text, TParsePosition position, String[] patterns) {
         for (int i = 0; i < patterns.length; ++i) {
+            if (patterns[i] == null) {
+                continue;
+            }
             if (matches(text, position.getIndex(), patterns[i])) {
                 position.setIndex(position.getIndex() + patterns[i].length());
                 return i;
