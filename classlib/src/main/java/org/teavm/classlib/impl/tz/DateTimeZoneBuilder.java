@@ -1372,9 +1372,10 @@ public class DateTimeZoneBuilder {
             ZoneOffset firstOffset = ZoneOffset.ofTotalSeconds(iWallOffsets[0] / 1000);
             ZoneOffset lastStandardOffset = firstStandardOffset;
             ZoneOffset lastOffset = firstOffset;
+            long time = Long.MIN_VALUE;
 
             for (int i = 1; i < iTransitions.length; ++i) {
-                long time = iTransitions[i];
+                time = iTransitions[i];
                 LocalDateTime transitionTime = LocalDateTime.ofEpochSecond(time / 1000,
                         (int) (time % 1000) * 1000000, ZoneOffset.UTC);
                 if (iStandardOffsets[i] != iStandardOffsets[i - 1]) {
@@ -1396,17 +1397,33 @@ public class DateTimeZoneBuilder {
 
             List<ZoneOffsetTransitionRule> lastRules;
             if (iTailZone != null) {
-                lastOffset = ZoneOffset.ofTotalSeconds(lastStandardOffset.getTotalSeconds());
+                if (time != Long.MIN_VALUE) {
+                    int count = 0;
+                    while (count < 2) {
+                        time = iTailZone.nextTransition(time);
+                        LocalDateTime transitionTime = LocalDateTime.ofEpochSecond(time / 1000,
+                                (int) (time % 1000) * 1000000, ZoneOffset.UTC);
+                        int newOffset = iTailZone.getOffset(time) / 1000;
+                        if (newOffset != lastOffset.getTotalSeconds()) {
+                            transitions.add(ZoneOffsetTransition.of(
+                                    transitionTime.plusSeconds(lastOffset.getTotalSeconds()),
+                                    lastOffset, ZoneOffset.ofTotalSeconds(newOffset)
+                            ));
+                            count++;
+                            lastOffset = ZoneOffset.ofTotalSeconds(newOffset);
+                        }
+                    }
+                }
+
                 ZoneOffset tailStandardOffset = ZoneOffset.ofTotalSeconds(iTailZone.iStandardOffset / 1000);
-                ZoneOffset tailOffset = ZoneOffset.ofTotalSeconds(
-                        (iTailZone.iStartRecurrence.iSaveMillis + iTailZone.iStandardOffset) / 1000);
+                ZoneOffset startRecurrenceOffset = ZoneOffset.ofTotalSeconds(
+                        (iTailZone.iStandardOffset + iTailZone.iStartRecurrence.iSaveMillis) / 1000);
+                ZoneOffset endRecurrenceOffset = ZoneOffset.ofTotalSeconds(
+                        (iTailZone.iStandardOffset + iTailZone.iEndRecurrence.iSaveMillis) / 1000);
                 ZoneOffsetTransitionRule firstRule = createRule(iTailZone.iStartRecurrence.iOfYear, tailStandardOffset,
-                        lastOffset, tailOffset);
-                lastOffset = tailOffset;
-                tailOffset = ZoneOffset.ofTotalSeconds(
-                        (iTailZone.iEndRecurrence.iSaveMillis + iTailZone.iStandardOffset) / 1000);
+                        endRecurrenceOffset, startRecurrenceOffset);
                 ZoneOffsetTransitionRule lastRule = createRule(iTailZone.iEndRecurrence.iOfYear, tailStandardOffset,
-                        lastOffset, tailOffset);
+                        startRecurrenceOffset, endRecurrenceOffset);
                 lastRules = Arrays.asList(firstRule, lastRule);
             } else {
                 lastRules = Collections.emptyList();
