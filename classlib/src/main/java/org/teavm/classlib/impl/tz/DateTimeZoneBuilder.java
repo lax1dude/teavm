@@ -1456,9 +1456,17 @@ public class DateTimeZoneBuilder {
                     throw new IllegalArgumentException();
             }
 
+            Month month = Month.of(ofYear.iMonthOfYear);
+            int dayOfMonthIndicator = ofYear.iDayOfMonth;
+            if (dayOfMonthIndicator < 0) {
+                if (month != Month.FEBRUARY) {
+                    dayOfMonthIndicator = month.maxLength() - 6;
+                }
+            }
+
             return ZoneOffsetTransitionRule.of(
-                    Month.of(ofYear.iMonthOfYear),
-                    ofYear.iDayOfMonth,
+                    month,
+                    dayOfMonthIndicator,
                     ofYear.iDayOfWeek != 0 ? DayOfWeek.of(ofYear.iDayOfWeek) : null,
                     LocalTime.ofSecondOfDay(millisOfDay / 1000),
                     midnight,
