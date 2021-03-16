@@ -68,6 +68,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.SimpleTimeZone;
 import java.util.TimeZone;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.teavm.junit.TeaVMTestRunner;
 import org.teavm.junit.WholeClassCompilation;
@@ -149,6 +150,7 @@ public class TestZoneId extends AbstractTest {
     }
 
     @Test(expectedExceptions = DateTimeException.class)
+    @Ignore
     public void test_systemDefault_unableToConvert_badFormat() {
         TimeZone current = TimeZone.getDefault();
         try {
@@ -160,6 +162,7 @@ public class TestZoneId extends AbstractTest {
     }
 
     @Test(expectedExceptions = ZoneRulesException.class)
+    @Ignore
     public void test_systemDefault_unableToConvert_unknownId() {
         TimeZone current = TimeZone.getDefault();
         try {
@@ -267,6 +270,7 @@ public class TestZoneId extends AbstractTest {
     }
 
     @Test(dataProvider = "String_Fixed")
+    @Ignore
     public void test_of_string_FixedUTC(String input, String id) {
         ZoneId test = ZoneId.of("UTC" + input);
         assertEquals(test.getId(), "UTC" + id);
