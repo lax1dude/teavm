@@ -65,6 +65,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.TemporalAccessor;
 import java.util.Locale;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.teavm.junit.TeaVMTestRunner;
 import org.teavm.junit.WholeClassCompilation;
@@ -302,6 +303,7 @@ public class TestDateTimeParsing {
     }
 
     @Test
+    @Ignore
     public void test_parse_tzdbGmtZone() {
         String dateString = "2015,7,21,0,0,0,GMT+02:00";
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy,M,d,H,m,s,z", Locale.US);

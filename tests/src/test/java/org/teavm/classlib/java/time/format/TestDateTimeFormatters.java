@@ -80,6 +80,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.teavm.junit.TeaVMTestRunner;
 import org.teavm.junit.WholeClassCompilation;
@@ -1059,6 +1060,7 @@ public class TestDateTimeFormatters {
     }
 
     @Test
+    @Ignore
     public void test_parse_weekDate_largeYear() {
         TemporalAccessor parsed = DateTimeFormatter.ISO_WEEK_DATE.parseUnresolved("+123456-W04-5",
                 new ParsePosition(0));

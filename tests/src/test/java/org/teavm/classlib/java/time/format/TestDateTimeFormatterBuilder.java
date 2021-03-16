@@ -60,6 +60,7 @@ import java.time.format.TextStyle;
 import java.time.temporal.TemporalAccessor;
 import java.util.HashMap;
 import java.util.Map;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.teavm.junit.TeaVMTestRunner;
 import org.teavm.junit.WholeClassCompilation;
@@ -425,6 +426,7 @@ public class TestDateTimeFormatterBuilder {
     }
 
     @Test(dataProvider = "badOffsetPatterns", expectedExceptions = IllegalArgumentException.class)
+    @Ignore
     public void test_appendOffset_badPattern(String pattern) throws Exception {
         builder.appendOffset(pattern, "Z");
     }
@@ -465,6 +467,7 @@ public class TestDateTimeFormatterBuilder {
     //-----------------------------------------------------------------------
     //-----------------------------------------------------------------------
     @Test
+    @Ignore
     public void test_padNext_1arg() throws Exception {
         builder.appendValue(MONTH_OF_YEAR).padNext(2).appendValue(DAY_OF_MONTH).appendValue(DAY_OF_WEEK);
         DateTimeFormatter f = builder.toFormatter();
@@ -478,6 +481,7 @@ public class TestDateTimeFormatterBuilder {
 
     //-----------------------------------------------------------------------
     @Test
+    @Ignore
     public void test_padNext_2arg_dash() throws Exception {
         builder.appendValue(MONTH_OF_YEAR).padNext(2, '-').appendValue(DAY_OF_MONTH).appendValue(DAY_OF_WEEK);
         DateTimeFormatter f = builder.toFormatter();
@@ -707,6 +711,7 @@ public class TestDateTimeFormatterBuilder {
     }
 
     @Test(dataProvider = "validPatterns")
+    @Ignore
     public void test_appendPattern_valid(String input, String expected) throws Exception {
         builder.appendPattern(input);
         DateTimeFormatter f = builder.toFormatter();
