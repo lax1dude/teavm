@@ -50,7 +50,6 @@ import static org.testng.Assert.assertEquals;
 
 import java.time.format.DecimalStyle;
 import java.util.Locale;
-import java.util.Set;
 
 import org.junit.runner.RunWith;
 import org.teavm.junit.TeaVMTestRunner;
