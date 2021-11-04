@@ -15,6 +15,7 @@
  */
 package org.teavm.ast;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -32,10 +33,22 @@ public abstract class Statement {
         return stmt;
     }
 
+    public static AssignmentStatement statementExpr(Expr expr) {
+        AssignmentStatement stmt = new AssignmentStatement();
+        stmt.setRightValue(expr);
+        return stmt;
+    }
+
     public static ReturnStatement exitFunction(Expr result) {
         ReturnStatement stmt = new ReturnStatement();
         stmt.setResult(result);
         return stmt;
+    }
+
+    public static SequentialStatement sequence(Statement... statements) {
+        SequentialStatement seq = new SequentialStatement();
+        seq.getSequence().addAll(Arrays.asList(statements));
+        return seq;
     }
 
     public static ThrowStatement raiseException(Expr exception) {
