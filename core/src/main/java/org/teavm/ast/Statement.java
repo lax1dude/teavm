@@ -16,8 +16,11 @@
 package org.teavm.ast;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 public abstract class Statement {
     public abstract void acceptVisitor(StatementVisitor visitor);
@@ -49,6 +52,18 @@ public abstract class Statement {
         SequentialStatement seq = new SequentialStatement();
         seq.getSequence().addAll(Arrays.asList(statements));
         return seq;
+    }
+
+    public static BlockStatement block(Function<BlockStatement, Collection<Statement>> body) {
+        BlockStatement statement = new BlockStatement();
+        statement.getBody().addAll(body.apply(statement));
+        return statement;
+    }
+
+    public static BreakStatement exitBlock(IdentifiedStatement identifiedStatement) {
+        BreakStatement statement = new BreakStatement();
+        statement.setTarget(identifiedStatement);
+        return statement;
     }
 
     public static ThrowStatement raiseException(Expr exception) {

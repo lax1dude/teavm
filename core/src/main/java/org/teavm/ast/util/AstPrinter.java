@@ -32,6 +32,7 @@ import org.teavm.ast.RecursiveVisitor;
 import org.teavm.ast.ReturnStatement;
 import org.teavm.ast.SequentialStatement;
 import org.teavm.ast.Statement;
+import org.teavm.ast.UnaryExpr;
 import org.teavm.ast.VariableExpr;
 import org.teavm.model.MethodReference;
 import org.teavm.model.instructions.NumericOperandType;
@@ -46,6 +47,7 @@ public class AstPrinter {
         statement.acceptVisitor(visitor);
         String result = sb.toString();
         sb.setLength(0);
+        blockIds.clear();
         return result;
     }
 
@@ -160,6 +162,33 @@ public class AstPrinter {
                     break;
                 case OR:
                     binary(expr, "||");
+                    break;
+            }
+        }
+
+        @Override
+        public void visit(UnaryExpr expr) {
+            switch (expr.getOperation()) {
+                case NOT:
+                    unary(expr, "!");
+                    break;
+                case NEGATE:
+                    unary(expr, "-");
+                    break;
+                case LENGTH:
+                    unary(expr, "length");
+                    break;
+                case NULL_CHECK:
+                    unary(expr, "!!");
+                    break;
+                case INT_TO_BYTE:
+                    unary(expr, "i2b");
+                    break;
+                case INT_TO_CHAR:
+                    unary(expr, "i2c");
+                    break;
+                case INT_TO_SHORT:
+                    unary(expr, "i2s");
                     break;
             }
         }
@@ -303,6 +332,12 @@ public class AstPrinter {
             print(expr.getFirstOperand());
             sb.append(" ");
             print(expr.getSecondOperand());
+            sb.append(")");
+        }
+
+        private void unary(UnaryExpr expr, String op) {
+            sb.append("(").append(op).append(typeToString(expr.getType())).append(" ");
+            print(expr.getOperand());
             sb.append(")");
         }
 

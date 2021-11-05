@@ -15,13 +15,13 @@
  */
 package org.teavm.ast.decompilation;
 
+import com.carrotsearch.hppc.ObjectIntHashMap;
+import com.carrotsearch.hppc.ObjectIntMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import org.teavm.ast.AssignmentStatement;
 import org.teavm.ast.BinaryOperation;
 import org.teavm.ast.BlockStatement;
@@ -37,7 +37,6 @@ import org.teavm.ast.SequentialStatement;
 import org.teavm.ast.Statement;
 import org.teavm.ast.UnaryExpr;
 import org.teavm.ast.UnaryOperation;
-import org.teavm.ast.util.AstPrinter;
 import org.teavm.common.DominatorTree;
 import org.teavm.common.Graph;
 import org.teavm.common.GraphUtils;
@@ -107,7 +106,7 @@ public class NewDecompiler {
     private boolean returnedVariableRelocatable;
     private IdentifiedStatement[] jumpTargets;
     private BasicBlock nextBlock;
-    private Set<IdentifiedStatement> usedIdentifiedStatements = new HashSet<>();
+    private ObjectIntMap<IdentifiedStatement> identifiedStatementUseCount = new ObjectIntHashMap<>();
 
     public Statement decompile(Program program) {
         this.program = program;
@@ -535,9 +534,10 @@ public class NewDecompiler {
                 blockStatements[i] = blockStatement;
             }
 
-            BasicBlock blockAfterIf = childBlocks.length > 0 ? childBlocks[childBlocks.length - 1] : nextBlock;
+            BasicBlock blockAfterIf = childBlocks.length > 0 ? childBlocks[0] : nextBlock;
             ConditionalStatement ifStatement = new ConditionalStatement();
             ifStatement.setCondition(condition);
+
             if (ownsTrueBranch) {
                 processBlock(ifTrue, blockAfterIf, ifStatement.getConsequent());
             } else {
@@ -546,6 +546,7 @@ public class NewDecompiler {
                     ifStatement.getConsequent().add(jump);
                 }
             }
+
             if (ownsFalseBranch) {
                 processBlock(ifFalse, blockAfterIf, ifStatement.getAlternative());
             } else {
@@ -554,16 +555,21 @@ public class NewDecompiler {
                     ifStatement.getAlternative().add(jump);
                 }
             }
-            invertIfIfNeccessary(ifStatement);
+
+            optimizeIf(ifStatement);
+
             if (blockStatements.length > 0) {
                 blockStatements[0].getBody().add(ifStatement);
                 for (int i = 0; i < childBlocks.length - 1; ++i) {
                     BlockStatement prevBlockStatement = blockStatements[i];
+                    optimizeConditionalBlock(prevBlockStatement);
                     BlockStatement blockStatement = blockStatements[i + 1];
                     addChildBlock(prevBlockStatement, blockStatement.getBody());
                     BasicBlock childBlock = childBlocks[i];
+                    processBlock(childBlock, childBlocks[i + 1], blockStatement.getBody());
                 }
                 BlockStatement lastBlockStatement = blockStatements[blockStatements.length - 1];
+                optimizeConditionalBlock(lastBlockStatement);
                 addChildBlock(lastBlockStatement, statements);
             } else {
                 statements.add(ifStatement);
@@ -573,7 +579,7 @@ public class NewDecompiler {
         }
 
         private void addChildBlock(BlockStatement blockStatement, List<Statement> containingList) {
-            if (usedIdentifiedStatements.remove(blockStatement)) {
+            if (identifiedStatementUseCount.get(blockStatement) > 0) {
                 containingList.add(blockStatement);
             } else {
                 containingList.addAll(blockStatement.getBody());
@@ -585,12 +591,96 @@ public class NewDecompiler {
                     && enteringBlockCount(branch) == 1;
         }
 
-        private void invertIfIfNeccessary(ConditionalStatement statement) {
-            if (!statement.getAlternative().isEmpty() && statement.getConsequent().isEmpty()) {
-                statement.setCondition(not(statement.getCondition()));
-                statement.getConsequent().addAll(statement.getAlternative());
-                statement.getAlternative().clear();
+        private void optimizeConditionalBlock(BlockStatement statement) {
+            while (optimizeFirstIfWithLastBreak(statement)) {
+                // repeat
             }
+        }
+
+        private boolean optimizeFirstIfWithLastBreak(BlockStatement statement) {
+            if (statement.getBody().isEmpty()) {
+                return false;
+            }
+            Statement firstStatement = statement.getBody().get(0);
+            if (!(firstStatement instanceof ConditionalStatement)) {
+                return false;
+            }
+            ConditionalStatement nestedIf = (ConditionalStatement) firstStatement;
+            if (nestedIf.getConsequent().isEmpty()) {
+                return false;
+            }
+            Statement last = nestedIf.getConsequent().get(nestedIf.getConsequent().size() - 1);
+            if (!(last instanceof BreakStatement)) {
+                return false;
+            }
+            if (((BreakStatement) last).getTarget() != statement) {
+                return false;
+            }
+            nestedIf.getConsequent().remove(nestedIf.getConsequent().size() - 1);
+            List<Statement> statementsToMove = statement.getBody().subList(1, statement.getBody().size());
+            nestedIf.getAlternative().addAll(statementsToMove);
+            statementsToMove.clear();
+            identifiedStatementUseCount.put(statement, identifiedStatementUseCount.get(statement) - 1);
+            optimizeIf(nestedIf);
+            return true;
+        }
+
+        private boolean optimizeIf(ConditionalStatement statement) {
+            return invertIf(statement) | mergeNestedIfs(statement) | invertNotCondition(statement);
+        }
+
+        private boolean invertIf(ConditionalStatement statement) {
+            if (statement.getAlternative().isEmpty() || !statement.getConsequent().isEmpty()) {
+                return false;
+            }
+            statement.setCondition(not(statement.getCondition()));
+            statement.getConsequent().addAll(statement.getAlternative());
+            statement.getAlternative().clear();
+            return true;
+        }
+
+        private boolean mergeNestedIfs(ConditionalStatement statement) {
+            if (!statement.getAlternative().isEmpty() || statement.getConsequent().size() != 1) {
+                return false;
+            }
+            Statement firstNested = statement.getConsequent().get(0);
+            if (!(firstNested instanceof ConditionalStatement)) {
+                return false;
+            }
+            ConditionalStatement nestedIf = (ConditionalStatement) firstNested;
+            if (!nestedIf.getAlternative().isEmpty()) {
+                return false;
+            }
+            statement.getConsequent().clear();
+            statement.getConsequent().addAll(nestedIf.getConsequent());
+            statement.setCondition(and(statement.getCondition(), nestedIf.getCondition()));
+            invertNotCondition(statement);
+            return true;
+        }
+
+        private boolean invertNotCondition(ConditionalStatement statement) {
+            if (!statement.getConsequent().isEmpty() && !statement.getAlternative().isEmpty()
+                    && statement.getCondition() instanceof UnaryExpr
+                    && ((UnaryExpr) statement.getCondition()).getOperation() == UnaryOperation.NOT) {
+                statement.setCondition(((UnaryExpr) statement.getCondition()).getOperand());
+                List<Statement> tmp = new ArrayList<>(statement.getAlternative());
+                statement.getAlternative().clear();
+                statement.getAlternative().addAll(statement.getConsequent());
+                statement.getConsequent().clear();
+                statement.getConsequent().addAll(tmp);
+                return true;
+            }
+            return false;
+        }
+
+        private Expr and(Expr a, Expr b) {
+            if (a instanceof UnaryExpr && b instanceof UnaryExpr) {
+                if (((UnaryExpr) a).getOperation() == UnaryOperation.NOT
+                        && ((UnaryExpr) b).getOperation() == UnaryOperation.NOT) {
+                    return Expr.invert(Expr.or(((UnaryExpr) a).getOperand(), ((UnaryExpr) b).getOperand()));
+                }
+            }
+            return Expr.and(a, b);
         }
 
         private Expr not(Expr expr) {
@@ -635,7 +725,8 @@ public class NewDecompiler {
 
         private IdentifiedStatement getJumpTarget(BasicBlock target) {
             IdentifiedStatement targetStatement = jumpTargets[target.getIndex()];
-            usedIdentifiedStatements.add(targetStatement);
+            int count = identifiedStatementUseCount.get(targetStatement);
+            identifiedStatementUseCount.put(targetStatement, count + 1);
             return targetStatement;
         }
 

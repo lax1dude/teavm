@@ -16,9 +16,31 @@
 package org.teavm.ast.decompilation.test;
 
 import static org.junit.Assert.assertEquals;
-import static org.teavm.ast.Expr.*;
-import static org.teavm.ast.Statement.*;
-import static org.teavm.model.builder.ProgramBuilder.*;
+import static org.teavm.ast.Expr.addInt;
+import static org.teavm.ast.Expr.and;
+import static org.teavm.ast.Expr.constant;
+import static org.teavm.ast.Expr.divInt;
+import static org.teavm.ast.Expr.invokeStatic;
+import static org.teavm.ast.Expr.less;
+import static org.teavm.ast.Expr.or;
+import static org.teavm.ast.Expr.var;
+import static org.teavm.ast.Statement.assign;
+import static org.teavm.ast.Statement.block;
+import static org.teavm.ast.Statement.cond;
+import static org.teavm.ast.Statement.exitBlock;
+import static org.teavm.ast.Statement.exitFunction;
+import static org.teavm.ast.Statement.sequence;
+import static org.teavm.ast.Statement.statementExpr;
+import static org.teavm.model.builder.ProgramBuilder.build;
+import static org.teavm.model.builder.ProgramBuilder.exit;
+import static org.teavm.model.builder.ProgramBuilder.ifLessThanZero;
+import static org.teavm.model.builder.ProgramBuilder.intNum;
+import static org.teavm.model.builder.ProgramBuilder.invokeStaticMethod;
+import static org.teavm.model.builder.ProgramBuilder.jump;
+import static org.teavm.model.builder.ProgramBuilder.label;
+import static org.teavm.model.builder.ProgramBuilder.put;
+import static org.teavm.model.builder.ProgramBuilder.set;
+import static org.teavm.model.builder.ProgramBuilder.var;
 import java.util.Arrays;
 import org.junit.Test;
 import org.teavm.ast.Statement;
@@ -32,6 +54,7 @@ public class NewDecompilerTest {
     private static final MethodReference PRINT = new MethodReference(NewDecompilerTest.class, "print", void.class);
     private static final MethodReference PRINT_2 = new MethodReference(NewDecompilerTest.class, "print2", void.class);
     private static final MethodReference PRINT_3 = new MethodReference(NewDecompilerTest.class, "print3", void.class);
+    private static final MethodReference PRINT_4 = new MethodReference(NewDecompilerTest.class, "print4", void.class);
     private static final MethodReference SUPPLY_INT_1 = new MethodReference(NewDecompilerTest.class,
             "supplyInt1", int.class);
     private static final MethodReference SUPPLY_INT_2 = new MethodReference(NewDecompilerTest.class,
@@ -261,14 +284,112 @@ public class NewDecompilerTest {
             exit();
         });
 
-        expect(cond(
-                less(constant(2), constant(0)),
-                Arrays.asList(
-                        statementExpr(invokeStatic(PRINT))
+        expect(sequence(
+                cond(
+                    and(
+                            less(constant(2), constant(0)),
+                            less(constant(3), constant(0))
+                    ),
+                    Arrays.asList(
+                            statementExpr(invokeStatic(PRINT))
+                    ),
+                    Arrays.asList(
+                            statementExpr(invokeStatic(PRINT_2))
+                    )
                 ),
-                Arrays.asList(
-                        statementExpr(invokeStatic(PRINT_2))
-                )
+                statementExpr(invokeStatic(PRINT_3))
+        ));
+    }
+
+    @Test
+    public void shortCircuitFailure() {
+        decompile(() -> {
+            set(var("a")).constant(2);
+            ifLessThanZero(var("a"), label("next"), label("false"));
+
+            put(label("next"));
+            invokeStaticMethod(PRINT_4);
+            set(var("b")).constant(3);
+            ifLessThanZero(var("b"), label("true"), label("false"));
+
+            put(label("true"));
+            invokeStaticMethod(PRINT);
+            jump(label("joint"));
+
+            put(label("false"));
+            invokeStaticMethod(PRINT_2);
+            jump(label("joint"));
+
+            put(label("joint"));
+            invokeStaticMethod(PRINT_3);
+            exit();
+        });
+
+        expect(sequence(
+                block(label -> Arrays.asList(
+                    cond(
+                            less(constant(2), constant(0)),
+                            Arrays.asList(
+                                    statementExpr(invokeStatic(PRINT_4)),
+                                    cond(
+                                            less(constant(3), constant(0)),
+                                            Arrays.asList(
+                                                    statementExpr(invokeStatic(PRINT)),
+                                                    exitBlock(label)
+                                            )
+                                    )
+                            )
+                    ),
+                    statementExpr(invokeStatic(PRINT_2))
+                )),
+                statementExpr(invokeStatic(PRINT_3))
+        ));
+    }
+
+    @Test
+    public void complexShortCircuit() {
+        decompile(() -> {
+            set(var("a")).constant(2);
+            ifLessThanZero(var("a"), label("test_b"), label("test_c"));
+
+            put(label("test_b"));
+            set(var("b")).constant(3);
+            ifLessThanZero(var("b"), label("true"), label("test_c"));
+
+            put(label("test_c"));
+            set(var("c")).constant(4);
+            ifLessThanZero(var("c"), label("true"), label("false"));
+
+            put(label("true"));
+            invokeStaticMethod(PRINT);
+            jump(label("joint"));
+
+            put(label("false"));
+            invokeStaticMethod(PRINT_2);
+            jump(label("joint"));
+
+            put(label("joint"));
+            invokeStaticMethod(PRINT_3);
+            exit();
+        });
+
+        expect(sequence(
+                cond(
+                        or(
+                            and(
+                                    less(constant(2), constant(0)),
+                                    less(constant(3), constant(0))
+                            ),
+                            less(constant(4), constant(0))
+                        ),
+                        Arrays.asList(
+                                statementExpr(invokeStatic(PRINT))
+                        ),
+                        Arrays.asList(
+                                statementExpr(invokeStatic(PRINT_2))
+                        )
+                ),
+                statementExpr(invokeStatic(PRINT_3))
         ));
     }
 
