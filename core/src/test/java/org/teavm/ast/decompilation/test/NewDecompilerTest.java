@@ -29,6 +29,7 @@ import static org.teavm.ast.Statement.block;
 import static org.teavm.ast.Statement.cond;
 import static org.teavm.ast.Statement.exitBlock;
 import static org.teavm.ast.Statement.exitFunction;
+import static org.teavm.ast.Statement.loopWhile;
 import static org.teavm.ast.Statement.sequence;
 import static org.teavm.ast.Statement.statementExpr;
 import static org.teavm.model.builder.ProgramBuilder.build;
@@ -55,6 +56,8 @@ public class NewDecompilerTest {
     private static final MethodReference PRINT_2 = new MethodReference(NewDecompilerTest.class, "print2", void.class);
     private static final MethodReference PRINT_3 = new MethodReference(NewDecompilerTest.class, "print3", void.class);
     private static final MethodReference PRINT_4 = new MethodReference(NewDecompilerTest.class, "print4", void.class);
+    private static final MethodReference PRINT_NUM = new MethodReference(NewDecompilerTest.class, "print",
+            int.class, void.class);
     private static final MethodReference SUPPLY_INT_1 = new MethodReference(NewDecompilerTest.class,
             "supplyInt1", int.class);
     private static final MethodReference SUPPLY_INT_2 = new MethodReference(NewDecompilerTest.class,
@@ -390,6 +393,38 @@ public class NewDecompilerTest {
                         )
                 ),
                 statementExpr(invokeStatic(PRINT_3))
+        ));
+    }
+
+    @Test
+    public void loop() {
+        decompile(() -> {
+            set(var("i")).constant(0);
+            set(var("n")).constant(10);
+            jump(label("head"));
+
+            put(label("head"));
+            set(var("cmp")).sub(intNum(), var("i"), var("n"));
+            ifLessThanZero(var("cmp"), label("body"), label("exit"));
+
+            put(label("body"));
+            invokeStaticMethod(PRINT_NUM, var("i"));
+            set(var("step")).constant(1);
+            set(var("i")).add(intNum(), var("i"), var("step"));
+            jump(label("head"));
+
+            put(label("exit"));
+            invokeStaticMethod(PRINT);
+            exit();
+        });
+
+        expect(sequence(
+                assign(var(0), constant(0)),
+                loopWhile(less(var(0), constant(10)), loop -> Arrays.asList(
+                        statementExpr(invokeStatic(PRINT_NUM, var(0))),
+                        assign(var(0), addInt(var(0), constant(1)))
+                )),
+                statementExpr(invokeStatic(PRINT))
         ));
     }
 

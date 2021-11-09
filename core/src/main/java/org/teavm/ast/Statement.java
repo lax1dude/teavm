@@ -66,6 +66,13 @@ public abstract class Statement {
         return statement;
     }
 
+    public static WhileStatement loopWhile(Expr condition, Function<WhileStatement, Collection<Statement>> body) {
+        WhileStatement statement = new WhileStatement();
+        statement.setCondition(condition);
+        statement.getBody().addAll(body.apply(statement));
+        return statement;
+    }
+
     public static ThrowStatement raiseException(Expr exception) {
         ThrowStatement stmt = new ThrowStatement();
         stmt.setException(exception);

@@ -15,6 +15,8 @@
  */
 package org.teavm.ast.decompilation;
 
+import com.carrotsearch.hppc.IntArrayList;
+import com.carrotsearch.hppc.IntStack;
 import com.carrotsearch.hppc.ObjectIntHashMap;
 import com.carrotsearch.hppc.ObjectIntMap;
 import java.util.ArrayList;
@@ -23,10 +25,12 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import org.teavm.ast.AssignmentStatement;
+import org.teavm.ast.BinaryExpr;
 import org.teavm.ast.BinaryOperation;
 import org.teavm.ast.BlockStatement;
 import org.teavm.ast.BreakStatement;
 import org.teavm.ast.ConditionalStatement;
+import org.teavm.ast.ConstantExpr;
 import org.teavm.ast.Expr;
 import org.teavm.ast.IdentifiedStatement;
 import org.teavm.ast.InvocationExpr;
@@ -37,6 +41,7 @@ import org.teavm.ast.SequentialStatement;
 import org.teavm.ast.Statement;
 import org.teavm.ast.UnaryExpr;
 import org.teavm.ast.UnaryOperation;
+import org.teavm.ast.WhileStatement;
 import org.teavm.common.DominatorTree;
 import org.teavm.common.Graph;
 import org.teavm.common.GraphUtils;
@@ -44,6 +49,7 @@ import org.teavm.model.BasicBlock;
 import org.teavm.model.Instruction;
 import org.teavm.model.InvokeDynamicInstruction;
 import org.teavm.model.Program;
+import org.teavm.model.ValueType;
 import org.teavm.model.Variable;
 import org.teavm.model.instructions.ArrayLengthInstruction;
 import org.teavm.model.instructions.AssignInstruction;
@@ -106,7 +112,10 @@ public class NewDecompiler {
     private boolean returnedVariableRelocatable;
     private IdentifiedStatement[] jumpTargets;
     private BasicBlock nextBlock;
+    private WhileStatement[] loopExits;
     private ObjectIntMap<IdentifiedStatement> identifiedStatementUseCount = new ObjectIntHashMap<>();
+    private boolean[] processingLoops;
+    private boolean[] loopNodes;
 
     public Statement decompile(Program program) {
         this.program = program;
@@ -143,9 +152,12 @@ public class NewDecompiler {
         cfg = ProgramUtils.buildControlFlowGraph2(program);
         dfs = GraphUtils.dfs(cfg);
         dom = GraphUtils.buildDominatorTree(cfg);
-        domGraph = GraphUtils.buildDominatorGraph(dom, program.basicBlockCount() * 2);
+        domGraph = GraphUtils.buildDominatorGraph(dom, cfg.size());
         relocatableVars = new Expr[program.variableCount()];
-        jumpTargets = new BlockStatement[program.basicBlockCount()];
+        jumpTargets = new IdentifiedStatement[program.basicBlockCount()];
+        processingLoops = new boolean[program.basicBlockCount()];
+        loopNodes = new boolean[program.basicBlockCount()];
+        loopExits = new WhileStatement[program.basicBlockCount()];
         calculateVarInfo();
     }
 
@@ -184,14 +196,178 @@ public class NewDecompiler {
         statements = null;
         relocatableVars = null;
         jumpTargets = null;
+        loopNodes = null;
+        loopExits = null;
     }
 
     private void calculateResult() {
         while (currentBlock != null) {
-            for (Instruction instruction : currentBlock) {
-                instruction.acceptVisitor(instructionDecompiler);
+            if (!processingLoops[currentBlock.getIndex()] && isLoopHead()) {
+                processLoop();
+            } else {
+                for (Instruction instruction : currentBlock) {
+                    instruction.acceptVisitor(instructionDecompiler);
+                }
             }
         }
+    }
+
+    private void processLoop() {
+        flushStack();
+        List<Statement> statementsBackup = statements;
+        BasicBlock nextBlockBackup = nextBlock;
+
+        WhileStatement loop = new WhileStatement();
+        BasicBlock loopExit = getBestLoopExit();
+        if (loopExits[loopExit.getIndex()] != null) {
+            loopExit = null;
+        } else {
+            loopExits[loopExit.getIndex()] = loop;
+        }
+        nextBlock = currentBlock;
+        statements.add(loop);
+        statements = loop.getBody();
+        jumpTargets[currentBlock.getIndex()] = loop;
+        processingLoops[currentBlock.getIndex()] = true;
+        calculateResult();
+        currentBlock = loopExit;
+        exprStack.clear();
+        optimizeLoop(loop);
+
+        statements = statementsBackup;
+        nextBlock = nextBlockBackup;
+        if (loopExit != null) {
+            loopExits[loopExit.getIndex()] = null;
+        }
+    }
+
+    private void optimizeLoop(WhileStatement loop) {
+        if (loop.getCondition() != null || loop.getBody().isEmpty()) {
+            return;
+        }
+        Statement first = loop.getBody().get(0);
+        if (!(first instanceof ConditionalStatement)) {
+            return;
+        }
+        ConditionalStatement firstIf = (ConditionalStatement) first;
+        if (!firstIf.getAlternative().isEmpty() || firstIf.getConsequent().size() != 1) {
+            return;
+        }
+        Statement firstIfThen = firstIf.getConsequent().get(0);
+        if (!(firstIfThen instanceof BreakStatement)) {
+            return;
+        }
+        BreakStatement firstBreak = (BreakStatement) firstIfThen;
+        if (firstBreak.getTarget() != loop) {
+            return;
+        }
+        loop.getBody().remove(0);
+        loop.setCondition(not(firstIf.getCondition()));
+    }
+
+    private BasicBlock getBestLoopExit() {
+        fillLoopNodes();
+        IntStack stack = new IntStack();
+        stack.push(currentBlock.getIndex());
+        IntArrayList nonLoopTargets = new IntArrayList();
+        IntArrayList candidates = new IntArrayList();
+        BasicBlock bestExit = null;
+        int bestExitScore = 0;
+
+        while (!stack.isEmpty()) {
+            int node = stack.pop();
+            int[] targets = domGraph.outgoingEdges(node * 2 + 1);
+
+            int nonLoopTargetsIndex = 0;
+            for (int target : targets) {
+                if (!loopNodes[target / 2]) {
+                    nonLoopTargets.add(target / 2);
+                }
+            }
+
+            if (!nonLoopTargets.isEmpty()) {
+                int bestNonLoopTarget = nonLoopTargets.get(0);
+                for (int i = 1; i < nonLoopTargets.size(); ++i) {
+                    int candidate = nonLoopTargets.get(i);
+                    if (dfs[bestNonLoopTarget * 2] < dfs[candidate * 2]) {
+                        bestNonLoopTarget = candidate;
+                    }
+                }
+                nonLoopTargets.clear();
+                int score = getComplexity(bestNonLoopTarget);
+                if (score > bestExitScore) {
+                    bestExitScore = score;
+                    bestExit = program.basicBlockAt(bestNonLoopTarget);
+                }
+            }
+
+            for (int target : targets) {
+                if (loopNodes[target / 2]) {
+                    stack.push(target / 2);
+                }
+            }
+        }
+
+        return bestExit;
+    }
+
+    private int getComplexity(int blockIndex) {
+        int complexity = 0;
+        IntStack stack = new IntStack();
+        stack.push(blockIndex);
+        boolean[] visited = new boolean[program.basicBlockCount()];
+        while (!stack.isEmpty()) {
+            blockIndex = stack.pop();
+            if (visited[blockIndex]) {
+                continue;
+            }
+            visited[blockIndex] = true;
+            complexity += program.basicBlockAt(blockIndex).instructionCount();
+            for (int successor : cfg.outgoingEdges(blockIndex * 2)) {
+                int successorIndex = successor / 2;
+                if (!visited[successorIndex]) {
+                    stack.push(successorIndex);
+                }
+            }
+            for (int successor : cfg.outgoingEdges(blockIndex * 2 + 1)) {
+                int successorIndex = successor / 2;
+                if (!visited[successorIndex]) {
+                    stack.push(successorIndex);
+                }
+            }
+        }
+        return complexity;
+    }
+
+    private void fillLoopNodes() {
+        Arrays.fill(loopNodes, false);
+        int[] stack = new int[cfg.size()];
+        int stackPtr = 0;
+        stack[stackPtr++] = currentBlock.getIndex();
+
+        while (stackPtr > 0) {
+            int node = stack[--stackPtr];
+            if (loopNodes[node]) {
+                continue;
+            }
+            loopNodes[node] = true;
+            for (int source : cfg.incomingEdges(node * 2)) {
+                int sourceIndex = source / 2;
+                if (!loopNodes[sourceIndex] && dom.dominates(blockEnterNode(currentBlock), source)) {
+                    stack[stackPtr++] = sourceIndex;
+                }
+            }
+        }
+    }
+
+    private boolean isLoopHead() {
+        int enterNode = blockEnterNode(currentBlock);
+        for (int source : cfg.incomingEdges(enterNode)) {
+            if (dom.dominates(enterNode, source)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void processBlock(BasicBlock block, BasicBlock next, List<Statement> statements) {
@@ -268,6 +444,26 @@ public class NewDecompiler {
             statements.add(statement);
         }
         exprStack.subList(j, exprStack.size()).clear();
+    }
+
+    private Expr and(Expr a, Expr b) {
+        if (a instanceof UnaryExpr && b instanceof UnaryExpr) {
+            if (((UnaryExpr) a).getOperation() == UnaryOperation.NOT
+                    && ((UnaryExpr) b).getOperation() == UnaryOperation.NOT) {
+                return Expr.invert(Expr.or(((UnaryExpr) a).getOperand(), ((UnaryExpr) b).getOperand()));
+            }
+        }
+        return Expr.and(a, b);
+    }
+
+    private Expr not(Expr expr) {
+        if (expr instanceof UnaryExpr) {
+            UnaryExpr unary = (UnaryExpr) expr;
+            if (unary.getOperation() == UnaryOperation.NOT) {
+                return unary.getOperand();
+            }
+        }
+        return Expr.invert(expr);
     }
 
     private InstructionVisitor instructionDecompiler = new InstructionVisitor() {
@@ -490,9 +686,27 @@ public class NewDecompiler {
             branch(condition, insn.getConsequent(), insn.getAlternative());
         }
 
-        private Expr cond(BinaryOperation op, NumericOperandType opType, Variable firstOp, Expr secondOp) {
+        private Expr cond(BinaryOperation op, NumericOperandType opType, Variable firstOp, Expr second) {
             Expr first = getVariable(firstOp.getIndex());
-            return Expr.binary(op, mapNumericType(opType), first, secondOp);
+            if (opType == NumericOperandType.INT && isIntZero(second)) {
+                if (first instanceof BinaryExpr) {
+                    BinaryExpr firstBinary = (BinaryExpr) first;
+                    if (firstBinary.getOperation() == BinaryOperation.SUBTRACT
+                            || firstBinary.getOperation() == BinaryOperation.COMPARE) {
+                        return Expr.binary(op, firstBinary.getType(), firstBinary.getFirstOperand(),
+                                firstBinary.getSecondOperand());
+                    }
+                }
+            }
+            return Expr.binary(op, mapNumericType(opType), first, second);
+        }
+
+        private boolean isIntZero(Expr expr) {
+            if (!(expr instanceof ConstantExpr)) {
+                return false;
+            }
+            Object value = ((ConstantExpr) expr).getValue();
+            return Integer.valueOf(0).equals(value);
         }
 
         private Expr cond(BinaryOperation op, NumericOperandType opType, Variable firstOp, Variable secondOp) {
@@ -502,6 +716,14 @@ public class NewDecompiler {
         }
 
         private void branch(Expr condition, BasicBlock ifTrue, BasicBlock ifFalse) {
+            if (loopExits[ifTrue.getIndex()] != null) {
+                loopExitBranch(condition, ifTrue, ifTrue);
+                return;
+            } else if (loopExits[ifFalse.getIndex()] != null) {
+                loopExitBranch(not(condition), ifFalse, ifTrue);
+                return;
+            }
+
             int sourceNode = blockExitNode(currentBlock);
             int[] immediatelyDominatedNodes = domGraph.outgoingEdges(sourceNode);
             boolean ownsTrueBranch = ownsBranch(currentBlock, ifTrue);
@@ -576,6 +798,16 @@ public class NewDecompiler {
             }
 
             currentBlock = childBlocks.length > 0 ? childBlocks[childBlocks.length - 1] : null;
+        }
+
+        private void loopExitBranch(Expr expr, BasicBlock loopExit, BasicBlock next) {
+            ConditionalStatement ifStatement = new ConditionalStatement();
+            ifStatement.setCondition(expr);
+            BreakStatement breakStatement = new BreakStatement();
+            breakStatement.setTarget(loopExits[loopExit.getIndex()]);
+            ifStatement.getConsequent().add(breakStatement);
+            statements.add(ifStatement);
+            currentBlock = next;
         }
 
         private void addChildBlock(BlockStatement blockStatement, List<Statement> containingList) {
@@ -671,26 +903,6 @@ public class NewDecompiler {
                 return true;
             }
             return false;
-        }
-
-        private Expr and(Expr a, Expr b) {
-            if (a instanceof UnaryExpr && b instanceof UnaryExpr) {
-                if (((UnaryExpr) a).getOperation() == UnaryOperation.NOT
-                        && ((UnaryExpr) b).getOperation() == UnaryOperation.NOT) {
-                    return Expr.invert(Expr.or(((UnaryExpr) a).getOperand(), ((UnaryExpr) b).getOperand()));
-                }
-            }
-            return Expr.and(a, b);
-        }
-
-        private Expr not(Expr expr) {
-            if (expr instanceof UnaryExpr) {
-                UnaryExpr unary = (UnaryExpr) expr;
-                if (unary.getOperation() == UnaryOperation.NOT) {
-                    return unary.getOperand();
-                }
-            }
-            return Expr.invert(expr);
         }
 
         @Override

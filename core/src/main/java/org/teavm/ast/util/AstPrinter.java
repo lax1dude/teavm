@@ -24,6 +24,7 @@ import org.teavm.ast.BlockStatement;
 import org.teavm.ast.BreakStatement;
 import org.teavm.ast.ConditionalStatement;
 import org.teavm.ast.ConstantExpr;
+import org.teavm.ast.ContinueStatement;
 import org.teavm.ast.Expr;
 import org.teavm.ast.IdentifiedStatement;
 import org.teavm.ast.InvocationExpr;
@@ -34,6 +35,7 @@ import org.teavm.ast.SequentialStatement;
 import org.teavm.ast.Statement;
 import org.teavm.ast.UnaryExpr;
 import org.teavm.ast.VariableExpr;
+import org.teavm.ast.WhileStatement;
 import org.teavm.model.MethodReference;
 import org.teavm.model.instructions.NumericOperandType;
 
@@ -319,6 +321,35 @@ public class AstPrinter {
         public void visit(BreakStatement statement) {
             Integer id = statement.getTarget() != null ? blockIds.get(statement.getTarget()) : null;
             sb.append("break ");
+            if (id == null) {
+                sb.append("<null>");
+            } else {
+                sb.append((int) id);
+            }
+            newLine();
+        }
+
+        @Override
+        public void visit(WhileStatement statement) {
+            int id = blockIds.size();
+            blockIds.put(statement, id);
+            sb.append("loop ").append(id);
+            if (statement.getCondition() != null) {
+                sb.append(" while ");
+                print(statement.getCondition());
+            }
+            indent();
+            newLine();
+            visit(statement.getBody());
+            outdent();
+            sb.append("end");
+            newLine();
+        }
+
+        @Override
+        public void visit(ContinueStatement statement) {
+            Integer id = statement.getTarget() != null ? blockIds.get(statement.getTarget()) : null;
+            sb.append("continue ");
             if (id == null) {
                 sb.append("<null>");
             } else {
