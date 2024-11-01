@@ -16,6 +16,7 @@
 package org.teavm.runtime;
 
 import org.teavm.interop.Address;
+import org.teavm.interop.Import;
 import org.teavm.interop.StaticInit;
 import org.teavm.interop.Unmanaged;
 
@@ -42,7 +43,8 @@ public final class LaxMalloc {
 
 	private static final int MIN_ALLOC_SIZE = 8;
 
-	private static final int ADDR_HEAP_LIMIT = 4; // Address where we store the current heap limit (32 bit int)
+	private static final int ADDR_HEAP_OUTER_LIMIT = 0; // Address where we store the WebAssembly.Memory limit (32 bit int)
+	private static final int ADDR_HEAP_INNER_LIMIT = 4; // Address where we store the current heap limit (32 bit int)
 	private static final int ADDR_HEAP_BUCKETS_FREE_MASK = 8; // Address where we store the bitmask of free chunk lists (64 bit int)
 	private static final int ADDR_HEAP_BUCKETS_START = 16; // Address to the list of 64 pointers to the beginnings of the 64 buckets
 	private static final int ADDR_HEAP_DATA_START = 272; // Beginning of the first chunk of the heap
@@ -51,7 +53,8 @@ public final class LaxMalloc {
 		// zero out the control region
 		Allocator.fillZero(Address.fromInt(0), ADDR_HEAP_DATA_START);
 		// initialize heap limit
-		Address.fromInt(ADDR_HEAP_LIMIT).putInt(ADDR_HEAP_DATA_START);
+		Address.fromInt(ADDR_HEAP_INNER_LIMIT).putInt(ADDR_HEAP_DATA_START);
+		Address.fromInt(ADDR_HEAP_OUTER_LIMIT).putInt(0x10000);
 	}
 
 	/**
@@ -314,7 +317,7 @@ public final class LaxMalloc {
 		}
 		
 		Address nextChunkPtr = chunkPtr.add(chunkSize);
-		if(Address.fromInt(ADDR_HEAP_LIMIT).getAddress().isLessThan(nextChunkPtr)) {
+		if(Address.fromInt(ADDR_HEAP_INNER_LIMIT).getAddress().isLessThan(nextChunkPtr)) {
 			// check if we can merge with the next chunk as well
 			int nextChunkSize = readChunkSizeStatus(nextChunkPtr);
 			if((nextChunkSize & 0x80000000) == 0) {
@@ -467,11 +470,27 @@ public final class LaxMalloc {
 	 * This is our sbrk
 	 */
 	private static Address growHeap(int amount) {
-		Address heapLimit = Address.fromInt(ADDR_HEAP_LIMIT).getAddress();
-		Address.fromInt(ADDR_HEAP_LIMIT).putAddress(heapLimit.add(amount));
-		//TODO: expand WebAssembly Memory
-		return heapLimit;
+		Address heapInnerLimit = Address.fromInt(ADDR_HEAP_INNER_LIMIT).getAddress();
+		Address heapOuterLimit = Address.fromInt(ADDR_HEAP_OUTER_LIMIT).getAddress();
+		Address newHeapInnerLimit = heapInnerLimit.add(amount);
+		if(heapOuterLimit.isLessThan(newHeapInnerLimit)) {
+			int bytesNeeded = newHeapInnerLimit.toInt() - heapOuterLimit.toInt();
+			bytesNeeded = (bytesNeeded + 0xFFFF) & 0xFFFF0000;
+			if(growHeapOuter(bytesNeeded)) {
+				Address.fromInt(ADDR_HEAP_INNER_LIMIT).putAddress(newHeapInnerLimit);
+				Address.fromInt(ADDR_HEAP_OUTER_LIMIT).putAddress(heapOuterLimit.add(bytesNeeded));
+				return newHeapInnerLimit;
+			}else {
+				return Address.fromInt(0);
+			}
+		}else {
+			Address.fromInt(ADDR_HEAP_INNER_LIMIT).putAddress(newHeapInnerLimit);
+			return newHeapInnerLimit;
+		}
 	}
+
+	@Import(name = "teavm_growHeap")
+	private static native boolean growHeapOuter(int bytes);
 
 	private static int readChunkSizeStatus(Address chunkAddr) {
 		return chunkAddr.getInt();
