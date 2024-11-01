@@ -515,13 +515,13 @@ public final class LaxMalloc {
 	}
 
 	private static int numberOfTrailingZerosL(long i) {
-    	//TODO: Intrinsify this, WASM has dedicated instructions for this operation!!!
-    	return Long.numberOfTrailingZeros(i);
-    }
+		// TODO: Intrinsify this, WASM has dedicated instructions for this operation!!!
+		return Long.numberOfTrailingZeros(i);
+	}
 
 	private static int numberOfLeadingZerosI(int i) {
-    	//TODO: Intrinsify this, WASM has dedicated instructions for this operation!!!
-    	return Integer.numberOfLeadingZeros(i);
-    }
+		// TODO: Intrinsify this, WASM has dedicated instructions for this operation!!!
+		return Integer.numberOfLeadingZeros(i);
+	}
 
 }
