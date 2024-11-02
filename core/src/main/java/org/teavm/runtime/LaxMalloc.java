@@ -241,7 +241,7 @@ public final class LaxMalloc {
 			
 			// iterate all free huge chunks
 			Address addrIterator = chunkPtr;
-			while((addrIterator = readChunkNextFreeAddr(addrIterator)).getInt() != chunkPtr.getInt()) {
+			do {
 				int chunkSize = readChunkSize(addrIterator);
 				
 				if(chunkSize - 8 >= sizeBytes) { // size - 2 ints
@@ -259,7 +259,7 @@ public final class LaxMalloc {
 					
 					return ret;
 				}
-			}
+			}while((addrIterator = readChunkNextFreeAddr(addrIterator)).getInt() != chunkPtr.getInt());
 		}
 		
 		// no free huge chunks found, time to sbrk
