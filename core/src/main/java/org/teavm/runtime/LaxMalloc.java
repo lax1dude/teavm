@@ -122,7 +122,7 @@ public final class LaxMalloc {
         
         // at least one bucket exists containing a free chunk,
         // quickly determine which bucket it is with bit hacks
-        int availableBucket = numberOfTrailingZerosL(bucketMask);
+        int availableBucket = Long.numberOfTrailingZeros(bucketMask);
         
         Address bucketStartAddr = Address.fromInt(ADDR_HEAP_BUCKETS_START).add(availableBucket << SIZEOF_PTR_SH);
         Address chunkPtr = bucketStartAddr.getAddress();
@@ -147,7 +147,7 @@ public final class LaxMalloc {
             
             if(bucketMask != 0l) {
                 // there is a bucket with a larger chunk
-                int availableLargerBucket = numberOfTrailingZerosL(bucketMask);
+                int availableLargerBucket = Long.numberOfTrailingZeros(bucketMask);
                 Address largerBucketStartAddr = Address.fromInt(ADDR_HEAP_BUCKETS_START).add(availableLargerBucket << SIZEOF_PTR_SH);
                 Address largerChunkPtr = largerBucketStartAddr.getAddress();
                 int largerChunkSize = readChunkSizeStatus(largerChunkPtr);
@@ -468,7 +468,7 @@ public final class LaxMalloc {
         if (allocSize < 128)
             return (allocSize >> 3) - 1;
         
-        int clz = numberOfLeadingZerosI(allocSize);
+        int clz = Integer.numberOfLeadingZeros(allocSize);
         int bucketIndex = (clz > 19) ? 110 - (clz << 2) + ((allocSize >> (29 - clz)) ^ 4)
                 : min(71 - (clz << 1) + ((allocSize >> (30 - clz)) ^ 2), 63);
         
@@ -538,16 +538,6 @@ public final class LaxMalloc {
 
     private static int min(int a, int b) {
         return a < b ? a : b;
-    }
-
-    private static int numberOfTrailingZerosL(long i) {
-        // TODO: Intrinsify this, WASM has dedicated instructions for this operation!!!
-        return Long.numberOfTrailingZeros(i);
-    }
-
-    private static int numberOfLeadingZerosI(int i) {
-        // TODO: Intrinsify this, WASM has dedicated instructions for this operation!!!
-        return Integer.numberOfLeadingZeros(i);
     }
 
 }
