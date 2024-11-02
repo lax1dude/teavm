@@ -16,8 +16,6 @@
 package org.teavm.backend.wasm.intrinsics.gc;
 
 import org.teavm.ast.InvocationExpr;
-import org.teavm.backend.wasm.intrinsics.WasmIntrinsic;
-import org.teavm.backend.wasm.intrinsics.WasmIntrinsicManager;
 import org.teavm.backend.wasm.model.expression.WasmCall;
 import org.teavm.backend.wasm.model.expression.WasmCopy;
 import org.teavm.backend.wasm.model.expression.WasmExpression;
@@ -25,11 +23,10 @@ import org.teavm.backend.wasm.model.expression.WasmFill;
 import org.teavm.backend.wasm.model.expression.WasmInt32Constant;
 import org.teavm.backend.wasm.model.expression.WasmUnreachable;
 import org.teavm.interop.Address;
-import org.teavm.interop.DirectMalloc;
 import org.teavm.model.MethodReference;
 import org.teavm.runtime.LaxMalloc;
 
-public class DirectMallocIntrinsic implements WasmIntrinsic {
+public class DirectMallocIntrinsic implements WasmGCIntrinsic {
     private static final MethodReference LAX_MALLOC = new MethodReference(LaxMalloc.class, "laxMalloc", int.class,
             Address.class);
     private static final MethodReference LAX_CALLOC = new MethodReference(LaxMalloc.class, "laxCalloc", int.class,
@@ -38,41 +35,22 @@ public class DirectMallocIntrinsic implements WasmIntrinsic {
             void.class);
 
     @Override
-    public boolean isApplicable(MethodReference methodReference) {
-        if (!methodReference.getClassName().equals(DirectMalloc.class.getName())) {
-            return false;
-        }
-        
-        switch (methodReference.getName()) {
-            case "malloc":
-            case "calloc":
-            case "free":
-            case "memcpy":
-            case "memset":
-            case "zmemset":
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    @Override
-    public WasmExpression apply(InvocationExpr invocation, WasmIntrinsicManager manager) {
+    public WasmExpression apply(InvocationExpr invocation, WasmGCIntrinsicContext manager) {
         switch (invocation.getMethod().getName()) {
             case "malloc": {
-                var function = manager.getFunctions().forStaticMethod(LAX_MALLOC);
+                var function = manager.functions().forStaticMethod(LAX_MALLOC);
                 var call = new WasmCall(function);
                 call.getArguments().add(manager.generate(invocation.getArguments().get(0)));
                 return call;
             }
             case "calloc": {
-                var function = manager.getFunctions().forStaticMethod(LAX_CALLOC);
+                var function = manager.functions().forStaticMethod(LAX_CALLOC);
                 var call = new WasmCall(function);
                 call.getArguments().add(manager.generate(invocation.getArguments().get(0)));
                 return call;
             }
             case "free": {
-                var function = manager.getFunctions().forStaticMethod(LAX_FREE);
+                var function = manager.functions().forStaticMethod(LAX_FREE);
                 var call = new WasmCall(function);
                 call.getArguments().add(manager.generate(invocation.getArguments().get(0)));
                 return call;
