@@ -24,6 +24,7 @@ import org.teavm.backend.wasm.model.WasmModule;
 import org.teavm.backend.wasm.model.WasmPackedType;
 import org.teavm.backend.wasm.model.WasmStorageType;
 import org.teavm.backend.wasm.model.WasmType;
+import org.teavm.interop.Address;
 import org.teavm.model.ClassReaderSource;
 import org.teavm.model.MethodDescriptor;
 import org.teavm.model.ValueType;
@@ -127,12 +128,16 @@ public class WasmGCTypeMapper {
                 }
             }
             if (result == null) {
-                var cls = classes.get(className);
-                if (cls == null) {
-                    className = "java.lang.Object";
+                if(className.equals(Address.class.getName())) {
+                    typeCache.put(className, WasmType.INT32);
+                }else {
+                    var cls = classes.get(className);
+                    if (cls == null) {
+                        className = "java.lang.Object";
+                    }
+                    result = classInfoProvider.getClassInfo(className).getType();
+                    typeCache.put(className, result);
                 }
-                result = classInfoProvider.getClassInfo(className).getType();
-                typeCache.put(className, result);
             }
         }
         return result;
