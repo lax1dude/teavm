@@ -50,12 +50,23 @@ public final class LaxMalloc {
     private static final int ADDR_HEAP_BUCKETS_START = 16; // Address to the list of 64 pointers to the beginnings of the 64 buckets
     private static final int ADDR_HEAP_DATA_START = 272; // Beginning of the first chunk of the heap
 
+    private static native Address addrHeap(int offset); // Intrinsic function to get an address in the heap segment
+
+    private static native int growHeapOuter(int bytes); // Intrinsic function to grow the heap segment
+
+    private static native Address getHeapMinAddr(); // Intrinsic function to get the minimum direct malloc heap segment ending address
+
+    private static native Address getHeapMaxAddr(); // Intrinsic function to get the maximum direct malloc heap segment ending address
+
+    @Import(name = "teavm_notifyHeapResized")
+    private static native void notifyHeapResized();
+
     static {
         // zero out the control region
-        DirectMalloc.zmemset(Address.fromInt(0), ADDR_HEAP_DATA_START);
+        DirectMalloc.zmemset(addrHeap(0), ADDR_HEAP_DATA_START);
         // initialize heap limit
-        Address.fromInt(ADDR_HEAP_INNER_LIMIT).putInt(ADDR_HEAP_DATA_START);
-        Address.fromInt(ADDR_HEAP_OUTER_LIMIT).putInt(0x10000);
+        addrHeap(ADDR_HEAP_INNER_LIMIT).putAddress(addrHeap(ADDR_HEAP_DATA_START));
+        addrHeap(ADDR_HEAP_OUTER_LIMIT).putAddress(getHeapMinAddr());
     }
 
     /**
@@ -96,7 +107,7 @@ public final class LaxMalloc {
         }
         
         // load bitmask of buckets with free chunks
-        long bucketMask = Address.fromInt(ADDR_HEAP_BUCKETS_FREE_MASK).getLong();
+        long bucketMask = addrHeap(ADDR_HEAP_BUCKETS_FREE_MASK).getLong();
         
         // mask away the buckets that we know are too small for this allocation
         bucketMask = (bucketMask & (0xFFFFFFFFFFFFFFFFL << bucket));
@@ -125,7 +136,7 @@ public final class LaxMalloc {
         // quickly determine which bucket it is with bit hacks
         int availableBucket = Long.numberOfTrailingZeros(bucketMask);
         
-        Address bucketStartAddr = Address.fromInt(ADDR_HEAP_BUCKETS_START).add(availableBucket << SIZEOF_PTR_SH);
+        Address bucketStartAddr = addrHeap(ADDR_HEAP_BUCKETS_START).add(availableBucket << SIZEOF_PTR_SH);
         Address chunkPtr = bucketStartAddr.getAddress();
         int chunkSize = readChunkSizeStatus(chunkPtr);
         Address itrChunkStart = Address.fromInt(0);
@@ -149,7 +160,7 @@ public final class LaxMalloc {
             if(bucketMask != 0l) {
                 // there is a bucket with a larger chunk
                 int availableLargerBucket = Long.numberOfTrailingZeros(bucketMask);
-                Address largerBucketStartAddr = Address.fromInt(ADDR_HEAP_BUCKETS_START).add(availableLargerBucket << SIZEOF_PTR_SH);
+                Address largerBucketStartAddr = addrHeap(ADDR_HEAP_BUCKETS_START).add(availableLargerBucket << SIZEOF_PTR_SH);
                 Address largerChunkPtr = largerBucketStartAddr.getAddress();
                 int largerChunkSize = readChunkSizeStatus(largerChunkPtr);
                 
@@ -234,10 +245,10 @@ public final class LaxMalloc {
     private static Address laxHugeAlloc(int sizeBytes, boolean cleared) {
         
         // check the bucket mask if bucket 63 has any chunks
-        if((Address.fromInt(ADDR_HEAP_BUCKETS_FREE_MASK).getLong() & 0x8000000000000000L) != 0) {
+        if((addrHeap(ADDR_HEAP_BUCKETS_FREE_MASK).getLong() & 0x8000000000000000L) != 0) {
 
             // bucket 63 address
-            Address bucketStartAddr = Address.fromInt(ADDR_HEAP_BUCKETS_START).add(63 << SIZEOF_PTR_SH);
+            Address bucketStartAddr = addrHeap(ADDR_HEAP_BUCKETS_START).add(63 << SIZEOF_PTR_SH);
             Address chunkPtr = bucketStartAddr.getAddress();
             
             // iterate all free huge chunks
@@ -302,7 +313,7 @@ public final class LaxMalloc {
         // set the chunk no longer in use
         chunkSize &= 0x7FFFFFFF;
         
-        if(Address.fromInt(ADDR_HEAP_DATA_START).isLessThan(chunkPtr)) {
+        if(addrHeap(ADDR_HEAP_DATA_START).isLessThan(chunkPtr)) {
             // check if we can merge with the previous chunk, and move it to another bucket
             Address prevChunkPtr = chunkPtr.add(-(chunkPtr.add(-4).getInt()));
             int prevChunkSize = readChunkSizeStatus(prevChunkPtr);
@@ -320,7 +331,7 @@ public final class LaxMalloc {
         }
         
         Address nextChunkPtr = chunkPtr.add(chunkSize);
-        if(Address.fromInt(ADDR_HEAP_INNER_LIMIT).getAddress().isLessThan(nextChunkPtr)) {
+        if(addrHeap(ADDR_HEAP_INNER_LIMIT).getAddress().isLessThan(nextChunkPtr)) {
             // check if we can merge with the next chunk as well
             int nextChunkSize = readChunkSizeStatus(nextChunkPtr);
             if((nextChunkSize & 0x80000000) == 0) {
@@ -388,8 +399,8 @@ public final class LaxMalloc {
     private static void linkChunkInFreeList(Address chunkPtr, int chunkSize) {
         int bucket = getListBucket(chunkSize - 8); // size - 2 ints
         
-        long bucketMask = Address.fromInt(ADDR_HEAP_BUCKETS_FREE_MASK).getLong();
-        Address bucketStartAddr = Address.fromInt(ADDR_HEAP_BUCKETS_START).add(bucket << SIZEOF_PTR_SH);
+        long bucketMask = addrHeap(ADDR_HEAP_BUCKETS_FREE_MASK).getLong();
+        Address bucketStartAddr = addrHeap(ADDR_HEAP_BUCKETS_START).add(bucket << SIZEOF_PTR_SH);
         
         // test the bucket mask if the bucket is empty
         if((bucketMask & (1L << bucket)) == 0l) {
@@ -401,7 +412,7 @@ public final class LaxMalloc {
             
             // set the free bit in bucket mask
             bucketMask |= (1L << bucket);
-            Address.fromInt(ADDR_HEAP_BUCKETS_FREE_MASK).putLong(bucketMask);
+            addrHeap(ADDR_HEAP_BUCKETS_FREE_MASK).putLong(bucketMask);
             
         }else {
             
@@ -434,13 +445,13 @@ public final class LaxMalloc {
             
             int chunkBucket = getListBucket(chunkSize - 8); // size - 2 ints
             
-            Address bucketStartAddr = Address.fromInt(ADDR_HEAP_BUCKETS_START).add(chunkBucket << SIZEOF_PTR_SH);
+            Address bucketStartAddr = addrHeap(ADDR_HEAP_BUCKETS_START).add(chunkBucket << SIZEOF_PTR_SH);
             bucketStartAddr.putAddress(Address.fromInt(0)); // remove chunk from the bucket
             
             // clear the bit in the free buckets bitmask
-            long bucketsFreeMask = Address.fromInt(ADDR_HEAP_BUCKETS_FREE_MASK).getLong();
+            long bucketsFreeMask = addrHeap(ADDR_HEAP_BUCKETS_FREE_MASK).getLong();
             bucketsFreeMask &= ~(1L << chunkBucket);
-            Address.fromInt(ADDR_HEAP_BUCKETS_FREE_MASK).putLong(bucketsFreeMask);
+            addrHeap(ADDR_HEAP_BUCKETS_FREE_MASK).putLong(bucketsFreeMask);
             
         }else {
             // there are other chunks in this bucket
@@ -450,7 +461,7 @@ public final class LaxMalloc {
             writeChunkPrevFreeAddr(nextChunkPtr, prevChunkPtr);
             
             int chunkBucket = getListBucket(chunkSize - 8); // size - 2 ints
-            Address bucketStartAddr = Address.fromInt(ADDR_HEAP_BUCKETS_START).add(chunkBucket << SIZEOF_PTR_SH);
+            Address bucketStartAddr = addrHeap(ADDR_HEAP_BUCKETS_START).add(chunkBucket << SIZEOF_PTR_SH);
             Address bucketStartChunk = bucketStartAddr.getAddress();
             
             // chunk is the first in the bucket, so we also need to
@@ -480,27 +491,26 @@ public final class LaxMalloc {
      * This is our sbrk
      */
     private static Address growHeap(int amount) {
-        Address heapInnerLimit = Address.fromInt(ADDR_HEAP_INNER_LIMIT).getAddress();
-        Address heapOuterLimit = Address.fromInt(ADDR_HEAP_OUTER_LIMIT).getAddress();
+        Address heapInnerLimit = addrHeap(ADDR_HEAP_INNER_LIMIT).getAddress();
+        Address heapOuterLimit = addrHeap(ADDR_HEAP_OUTER_LIMIT).getAddress();
         Address newHeapInnerLimit = heapInnerLimit.add(amount);
         if(heapOuterLimit.isLessThan(newHeapInnerLimit)) {
             int bytesNeeded = newHeapInnerLimit.toInt() - heapOuterLimit.toInt();
             bytesNeeded = (bytesNeeded + 0xFFFF) & 0xFFFF0000;
-            if(growHeapOuter(bytesNeeded)) {
-                Address.fromInt(ADDR_HEAP_INNER_LIMIT).putAddress(newHeapInnerLimit);
-                Address.fromInt(ADDR_HEAP_OUTER_LIMIT).putAddress(heapOuterLimit.add(bytesNeeded));
+            Address newHeapOuterLimit = heapOuterLimit.add(bytesNeeded);
+            if(!getHeapMaxAddr().isLessThan(newHeapOuterLimit) && growHeapOuter(bytesNeeded >> 16) != -1) {
+                addrHeap(ADDR_HEAP_INNER_LIMIT).putAddress(newHeapInnerLimit);
+                addrHeap(ADDR_HEAP_OUTER_LIMIT).putAddress(newHeapOuterLimit);
+                notifyHeapResized();
                 return newHeapInnerLimit;
             }else {
                 return Address.fromInt(0);
             }
         }else {
-            Address.fromInt(ADDR_HEAP_INNER_LIMIT).putAddress(newHeapInnerLimit);
+            addrHeap(ADDR_HEAP_INNER_LIMIT).putAddress(newHeapInnerLimit);
             return newHeapInnerLimit;
         }
     }
-
-    @Import(name = "teavm_growHeap")
-    private static native boolean growHeapOuter(int bytes);
 
     /**
      * Note that on a free chunk, this is the size, because the status bit is 0

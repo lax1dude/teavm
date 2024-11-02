@@ -47,6 +47,7 @@ import org.teavm.backend.wasm.intrinsics.gc.WasmGCIntrinsics;
 import org.teavm.backend.wasm.model.WasmCustomSection;
 import org.teavm.backend.wasm.model.WasmFunction;
 import org.teavm.backend.wasm.model.WasmLocal;
+import org.teavm.backend.wasm.model.WasmMemorySegment;
 import org.teavm.backend.wasm.model.WasmModule;
 import org.teavm.backend.wasm.model.WasmTag;
 import org.teavm.backend.wasm.model.WasmType;
@@ -99,6 +100,9 @@ public class WasmGCTarget implements TeaVMTarget, TeaVMWasmGCHost {
     private List<WasmGCCustomGeneratorFactory> customGeneratorFactories = new ArrayList<>();
     private EntryPointTransformation entryPointTransformation = new EntryPointTransformation();
     private List<WasmGCClassConsumer> classConsumers = new ArrayList<>();
+    private boolean enableDirectMallocSupport = false;
+    private int directMallocMinHeapSize = 0x10000;
+    private int directMallocMaxHeapSize = 0x10000000;
 
     public void setObfuscated(boolean obfuscated) {
         this.obfuscated = obfuscated;
@@ -126,6 +130,18 @@ public class WasmGCTarget implements TeaVMTarget, TeaVMWasmGCHost {
 
     public void setSourceMapLocation(String sourceMapLocation) {
         this.sourceMapLocation = sourceMapLocation;
+    }
+
+    public void setEnableDirectMallocSupport(boolean enable) {
+        this.enableDirectMallocSupport = enable;
+    }
+
+    public void setDirectMallocMinHeapSize(int minHeapSize) {
+        this.directMallocMinHeapSize = WasmRuntime.align(minHeapSize, WasmHeap.PAGE_SIZE);
+    }
+
+    public void setDirectMallocMaxHeapSize(int maxHeapSize) {
+        this.directMallocMaxHeapSize = WasmRuntime.align(maxHeapSize, WasmHeap.PAGE_SIZE);
     }
 
     @Override
@@ -194,6 +210,9 @@ public class WasmGCTarget implements TeaVMTarget, TeaVMWasmGCHost {
         var deps = new WasmGCDependencies(dependencyAnalyzer);
         deps.contribute();
         deps.contributeStandardExports();
+        if(enableDirectMallocSupport) {
+            deps.contributeDirectMalloc();
+        }
     }
 
     @Override
@@ -285,6 +304,17 @@ public class WasmGCTarget implements TeaVMTarget, TeaVMWasmGCHost {
         moduleGenerator.generate();
         customGenerators.contributeToModule(module);
         generateExceptionExports(declarationsGenerator);
+        if(enableDirectMallocSupport) {
+            var heapSegment = new WasmMemorySegment();
+            if (!module.getSegments().isEmpty()) {
+                var lastSegment = module.getSegments().get(module.getSegments().size() - 1);
+                heapSegment.setOffset(WasmRuntime.align(lastSegment.getOffset() + lastSegment.getLength(), WasmHeap.PAGE_SIZE));
+            }
+            heapSegment.setLength(directMallocMinHeapSize);
+            module.getSegments().add(heapSegment);
+            intrinsics.setupLaxMallocHeap(heapSegment.getOffset(), heapSegment.getOffset() + directMallocMinHeapSize,
+                    heapSegment.getOffset() + directMallocMaxHeapSize);
+        }
         adjustModuleMemory(module);
 
         emitWasmFile(module, buildTarget, outputName, debugInfoBuilder);
@@ -390,9 +420,16 @@ public class WasmGCTarget implements TeaVMTarget, TeaVMWasmGCHost {
             return;
         }
 
-        var pages = (memorySize - 1) / WasmHeap.PAGE_SIZE + 1;
-        module.setMinMemorySize(pages);
-        module.setMaxMemorySize(pages);
+        if(enableDirectMallocSupport) {
+            var minPages = (memorySize - 1) / WasmHeap.PAGE_SIZE + 1;
+            var maxPages = (memorySize - directMallocMinHeapSize + directMallocMaxHeapSize - 1) / WasmHeap.PAGE_SIZE + 1;
+            module.setMinMemorySize(minPages);
+            module.setMaxMemorySize(maxPages);
+        }else {
+            var pages = (memorySize - 1) / WasmHeap.PAGE_SIZE + 1;
+            module.setMinMemorySize(pages);
+            module.setMaxMemorySize(pages);
+        }
     }
 
     private void emitWasmFile(WasmModule module, BuildTarget buildTarget, String outputName,

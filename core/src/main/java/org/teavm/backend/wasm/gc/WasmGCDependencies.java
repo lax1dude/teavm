@@ -22,7 +22,9 @@ import org.teavm.backend.wasm.runtime.gc.WasmGCSupport;
 import org.teavm.dependency.AbstractDependencyListener;
 import org.teavm.dependency.DependencyAgent;
 import org.teavm.dependency.DependencyAnalyzer;
+import org.teavm.interop.Address;
 import org.teavm.model.MethodReference;
+import org.teavm.runtime.LaxMalloc;
 
 public class WasmGCDependencies {
     private DependencyAnalyzer analyzer;
@@ -126,5 +128,11 @@ public class WasmGCDependencies {
 
     private void contributeString() {
         analyzer.addDependencyListener(new StringInternDependencySupport());
+    }
+
+    public void contributeDirectMalloc() {
+        analyzer.linkMethod(new MethodReference(LaxMalloc.class, "laxMalloc", int.class, Address.class)).use();
+        analyzer.linkMethod(new MethodReference(LaxMalloc.class, "laxCalloc", int.class, Address.class)).use();
+        analyzer.linkMethod(new MethodReference(LaxMalloc.class, "laxFree", Address.class, void.class)).use();
     }
 }
