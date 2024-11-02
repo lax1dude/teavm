@@ -82,6 +82,9 @@ public final class LaxMalloc {
 			sizeBytes = MIN_ALLOC_SIZE;
 		}
 		
+		// Make sure all allocations are at least a multiple of 4 to maintain alignment 
+		sizeBytes = (sizeBytes + 3) & 0xFFFFFFFC;
+		
 		// always between 0-63
 		int bucket = getListBucket(sizeBytes);
 		
@@ -124,7 +127,7 @@ public final class LaxMalloc {
 		Address bucketStartAddr = Address.fromInt(ADDR_HEAP_BUCKETS_START).add(availableBucket << SIZEOF_PTR_SH);
 		Address chunkPtr = bucketStartAddr.getAddress();
 		int chunkSize = readChunkSize(chunkPtr);
-		boolean bucketHasMultipleChunks = false;
+		Address itrChunkStart = Address.fromInt(0);
 		
 		// check if the first chunk in the bucket is large enough
 		if(chunkSize - 8 < sizeBytes) { // size - 2 ints
@@ -136,8 +139,7 @@ public final class LaxMalloc {
 			Address chunkNextPtr = readChunkNextFreeAddr(chunkPtr);
 			if(chunkNextPtr.getInt() != chunkPtr.getInt()) {
 				bucketStartAddr.putAddress(chunkNextPtr);
-				chunkPtr = chunkNextPtr;
-				bucketHasMultipleChunks = true;
+				itrChunkStart = chunkNextPtr;
 			}
 			
 			// extend mask to the next bucket
@@ -179,15 +181,15 @@ public final class LaxMalloc {
 			return ret;
 		}
 		
-		if(bucketHasMultipleChunks) {
+		if(itrChunkStart.toInt() != 0) {
 			
 			// if we've reached this point, it means the first chunk in the bucket wasn't large enough
 			// and there weren't any chunks in the larger buckets we could split up
 			// so we need to look closer
 			
 			// iterate the (only) bucket of possibly large enough chunks
-			Address addrIterator = chunkPtr;
-			while((addrIterator = readChunkNextFreeAddr(addrIterator)).getInt() != chunkPtr.getInt()) {
+			Address addrIterator = itrChunkStart;
+			do {
 				chunkSize = readChunkSize(addrIterator);
 				
 				// check if the chunk is large enough
@@ -206,7 +208,7 @@ public final class LaxMalloc {
 					
 					return ret;
 				}
-			}
+			}while((addrIterator = readChunkNextFreeAddr(addrIterator)).getInt() != chunkPtr.getInt());
 		}
 		
 		// no other options, time to sbrk
@@ -292,11 +294,12 @@ public final class LaxMalloc {
 		// chunk actually starts 4 bytes before
 		Address chunkPtr = address.add(-4);
 		
-		// set the chunk no longer in use
-		setChunkInUse(chunkPtr, false);
-		
 		// bring the size of the chunk into the stack
 		int chunkSize = chunkPtr.getInt();
+		boolean sizeChanged = false;
+		
+		// set the chunk no longer in use
+		chunkSize &= 0x7FFFFFFF;
 		
 		if(Address.fromInt(ADDR_HEAP_DATA_START).isLessThan(chunkPtr)) {
 			// check if we can merge with the previous chunk, and move it to another bucket
@@ -311,8 +314,7 @@ public final class LaxMalloc {
 				// resize the current chunk to also contain the previous chunk
 				chunkPtr = prevChunkPtr;
 				chunkSize += prevChunkSize;
-				chunkPtr.putInt(chunkSize);
-				chunkPtr.add(chunkSize - 4).putInt(chunkSize);
+				sizeChanged = true;
 			}
 		}
 		
@@ -328,9 +330,16 @@ public final class LaxMalloc {
 				
 				// resize the current chunk to also contain the next chunk
 				chunkSize += nextChunkSize;
-				chunkPtr.putInt(chunkSize);
-				chunkPtr.add(chunkSize - 4).putInt(chunkSize);
+				sizeChanged = true;
 			}
+		}
+		
+		// store the final chunk size (also clears the in use flag)
+		chunkPtr.putInt(chunkSize);
+		
+		if(sizeChanged) {
+			// if the size of the chunk changed, we also need to update the chunk's second size integer
+			chunkPtr.add(chunkSize - 4).putInt(chunkSize);
 		}
 		
 		// add the final chunk to the free chunks list
@@ -368,7 +377,7 @@ public final class LaxMalloc {
 
 		}else {
 			// not large enough to split, just take the entire chunk
-			setChunkInUse(chunkPtr, true);
+			chunkPtr.putInt(chunkSize | 0x80000000); // sets the in use flag
 		}
 	}
 
@@ -506,11 +515,6 @@ public final class LaxMalloc {
 
 	private static void writeChunkSizeStatus(Address chunkAddr, int sizeStatus) {
 		chunkAddr.putInt(sizeStatus);
-	}
-
-	private static void setChunkInUse(Address chunkAddr, boolean inUse) {
-		int i = chunkAddr.getInt();
-		chunkAddr.putInt(inUse ? (i | 0x80000000) : (i & 0x7FFFFFFF));
 	}
 
 	private static Address readChunkPrevFreeAddr(Address chunkAddr) {
