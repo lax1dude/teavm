@@ -126,7 +126,7 @@ public final class LaxMalloc {
 		
 		Address bucketStartAddr = Address.fromInt(ADDR_HEAP_BUCKETS_START).add(availableBucket << SIZEOF_PTR_SH);
 		Address chunkPtr = bucketStartAddr.getAddress();
-		int chunkSize = readChunkSize(chunkPtr);
+		int chunkSize = readChunkSizeStatus(chunkPtr);
 		Address itrChunkStart = Address.fromInt(0);
 		
 		// check if the first chunk in the bucket is large enough
@@ -150,7 +150,7 @@ public final class LaxMalloc {
 				int availableLargerBucket = numberOfTrailingZerosL(bucketMask);
 				Address largerBucketStartAddr = Address.fromInt(ADDR_HEAP_BUCKETS_START).add(availableLargerBucket << SIZEOF_PTR_SH);
 				Address largerChunkPtr = largerBucketStartAddr.getAddress();
-				int largerChunkSize = readChunkSize(largerChunkPtr);
+				int largerChunkSize = readChunkSizeStatus(largerChunkPtr);
 				
 				// this will remove the chunk from the free list
 				allocateMemoryFromChunk(largerChunkPtr, largerChunkSize, sizeBytes);
@@ -190,7 +190,7 @@ public final class LaxMalloc {
 			// iterate the (only) bucket of possibly large enough chunks
 			Address addrIterator = itrChunkStart;
 			do {
-				chunkSize = readChunkSize(addrIterator);
+				chunkSize = readChunkSizeStatus(addrIterator);
 				
 				// check if the chunk is large enough
 				if(chunkSize - 8 >= sizeBytes) { // size - 2 ints
@@ -242,7 +242,7 @@ public final class LaxMalloc {
 			// iterate all free huge chunks
 			Address addrIterator = chunkPtr;
 			do {
-				int chunkSize = readChunkSize(addrIterator);
+				int chunkSize = readChunkSizeStatus(addrIterator);
 				
 				if(chunkSize - 8 >= sizeBytes) { // size - 2 ints
 					// we've found a large enough chunk
@@ -501,6 +501,9 @@ public final class LaxMalloc {
 	@Import(name = "teavm_growHeap")
 	private static native boolean growHeapOuter(int bytes);
 
+	/**
+	 * Note that on a free chunk, this is the size, because the status bit is 0
+	 */
 	private static int readChunkSizeStatus(Address chunkAddr) {
 		return chunkAddr.getInt();
 	}
