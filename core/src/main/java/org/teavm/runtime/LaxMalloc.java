@@ -16,6 +16,7 @@
 package org.teavm.runtime;
 
 import org.teavm.interop.Address;
+import org.teavm.interop.DirectMalloc;
 import org.teavm.interop.Import;
 import org.teavm.interop.StaticInit;
 import org.teavm.interop.Unmanaged;
@@ -51,7 +52,7 @@ public final class LaxMalloc {
 
     static {
         // zero out the control region
-        Allocator.fillZero(Address.fromInt(0), ADDR_HEAP_DATA_START);
+        DirectMalloc.zmemset(Address.fromInt(0), ADDR_HEAP_DATA_START);
         // initialize heap limit
         Address.fromInt(ADDR_HEAP_INNER_LIMIT).putInt(ADDR_HEAP_DATA_START);
         Address.fromInt(ADDR_HEAP_OUTER_LIMIT).putInt(0x10000);
@@ -160,7 +161,7 @@ public final class LaxMalloc {
                 
                 // clear if requested
                 if(cleared) {
-                    Allocator.fillZero(ret, sizeBytes);
+                    DirectMalloc.zmemset(ret, sizeBytes);
                 }
                 
                 return ret;
@@ -175,7 +176,7 @@ public final class LaxMalloc {
             
             // clear if requested
             if(cleared) {
-                Allocator.fillZero(ret, sizeBytes);
+                DirectMalloc.zmemset(ret, sizeBytes);
             }
             
             return ret;
@@ -203,7 +204,7 @@ public final class LaxMalloc {
                     
                     // clear if requested
                     if(cleared) {
-                        Allocator.fillZero(ret, sizeBytes);
+                        DirectMalloc.zmemset(ret, sizeBytes);
                     }
                     
                     return ret;
@@ -254,7 +255,7 @@ public final class LaxMalloc {
                     
                     // clear if requested
                     if(cleared) {
-                        Allocator.fillZero(ret, sizeBytes);
+                        DirectMalloc.zmemset(ret, sizeBytes);
                     }
                     
                     return ret;
