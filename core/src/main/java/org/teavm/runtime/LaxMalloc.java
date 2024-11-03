@@ -218,7 +218,7 @@ public final class LaxMalloc {
                 chunkSize = readChunkSizeStatus(addrIterator);
                 
                 // check if the chunk is large enough
-                if(chunkSize - 8 >= sizeBytes) { // size - 2 ints
+                if (chunkSize - 8 >= sizeBytes) { // size - 2 ints
                     // we've found a large enough chunk
                     // this will remove the chunk from the free list
                     allocateMemoryFromChunk(addrIterator, chunkSize, sizeBytes);
@@ -227,7 +227,7 @@ public final class LaxMalloc {
                     Address ret = chunkPtr.add(4);
                     
                     // clear if requested
-                    if(cleared) {
+                    if (cleared) {
                         DirectMalloc.zmemset(ret, sizeBytes);
                     }
                     
@@ -259,7 +259,7 @@ public final class LaxMalloc {
     private static Address laxHugeAlloc(int sizeBytes, boolean cleared) {
         
         // check the bucket mask if bucket 63 has any chunks
-        if((addrHeap(ADDR_HEAP_BUCKETS_FREE_MASK).getLong() & 0x8000000000000000L) != 0) {
+        if ((addrHeap(ADDR_HEAP_BUCKETS_FREE_MASK).getLong() & 0x8000000000000000L) != 0) {
 
             // bucket 63 address
             Address bucketStartAddr = addrHeap(ADDR_HEAP_BUCKETS_START).add(63 << SIZEOF_PTR_SH);
@@ -270,7 +270,7 @@ public final class LaxMalloc {
             do {
                 int chunkSize = readChunkSizeStatus(addrIterator);
                 
-                if(chunkSize - 8 >= sizeBytes) { // size - 2 ints
+                if (chunkSize - 8 >= sizeBytes) { // size - 2 ints
                     // we've found a large enough chunk
                     // this will remove the chunk from the free list
                     allocateMemoryFromChunk(addrIterator, chunkSize, sizeBytes);
@@ -285,7 +285,8 @@ public final class LaxMalloc {
                     
                     return ret;
                 }
-            }while((addrIterator = readChunkNextFreeAddr(addrIterator)).getInt() != chunkPtr.getInt());
+                addrIterator = readChunkNextFreeAddr(addrIterator);
+            } while (addrIterator.getInt() != chunkPtr.getInt());
         }
         
         // no free huge chunks found, time to sbrk
@@ -294,7 +295,7 @@ public final class LaxMalloc {
         Address newChunk = growHeap(sizePlusInts); // sbrk
         
         // Out of memory
-        if(newChunk.toInt() == 0) {
+        if (newChunk.toInt() == 0) {
             return Address.fromInt(0); //TODO
         }
         
@@ -313,7 +314,7 @@ public final class LaxMalloc {
      * bad things will happen if you free an address that was never allocated
      */
     public static void laxFree(Address address) {
-        if(address.toInt() == 0) {
+        if (address.toInt() == 0) {
             return;
         }
         
@@ -327,11 +328,11 @@ public final class LaxMalloc {
         // set the chunk no longer in use
         chunkSize &= 0x7FFFFFFF;
         
-        if(addrHeap(ADDR_HEAP_DATA_START).isLessThan(chunkPtr)) {
+        if (addrHeap(ADDR_HEAP_DATA_START).isLessThan(chunkPtr)) {
             // check if we can merge with the previous chunk, and move it to another bucket
             Address prevChunkPtr = chunkPtr.add(-(chunkPtr.add(-4).getInt()));
             int prevChunkSize = readChunkSizeStatus(prevChunkPtr);
-            if((prevChunkSize & 0x80000000) == 0) {
+            if ((prevChunkSize & 0x80000000) == 0) {
                 // previous chunk is not in use, merge!
                 
                 // remove the previous chunk from its list
@@ -345,10 +346,10 @@ public final class LaxMalloc {
         }
         
         Address nextChunkPtr = chunkPtr.add(chunkSize);
-        if(addrHeap(ADDR_HEAP_INNER_LIMIT).getAddress().isLessThan(nextChunkPtr)) {
+        if (addrHeap(ADDR_HEAP_INNER_LIMIT).getAddress().isLessThan(nextChunkPtr)) {
             // check if we can merge with the next chunk as well
             int nextChunkSize = readChunkSizeStatus(nextChunkPtr);
-            if((nextChunkSize & 0x80000000) == 0) {
+            if ((nextChunkSize & 0x80000000) == 0) {
                 // next chunk is not in use, merge!
 
                 // remove the next chunk from its list
@@ -363,7 +364,7 @@ public final class LaxMalloc {
         // store the final chunk size (also clears the in use flag)
         chunkPtr.putInt(chunkSize);
         
-        if(sizeChanged) {
+        if (sizeChanged) {
             // if the size of the chunk changed, we also need to update the chunk's second size integer
             chunkPtr.add(chunkSize - 4).putInt(chunkSize);
         }
@@ -385,7 +386,7 @@ public final class LaxMalloc {
         
         // check if we can split the chunk into two smaller chunks
         // chunk must be large enough to hold the 2 list pointers
-        if(otherHalfSize - (2 << SIZEOF_PTR_SH) >= MIN_ALLOC_SIZE) {
+        if (otherHalfSize - (2 << SIZEOF_PTR_SH) >= MIN_ALLOC_SIZE) {
             // chunk is large enough to split
             
             // provision the lower part of the chunk, the part we want to use
@@ -401,7 +402,7 @@ public final class LaxMalloc {
             // return the upper part of the chunk to the free chunks list
             linkChunkInFreeList(otherChunkPtr, otherHalfSize);
 
-        }else {
+        } else {
             // not large enough to split, just take the entire chunk
             chunkPtr.putInt(chunkSize | 0x80000000); // sets the in use flag
         }
@@ -417,7 +418,7 @@ public final class LaxMalloc {
         Address bucketStartAddr = addrHeap(ADDR_HEAP_BUCKETS_START).add(bucket << SIZEOF_PTR_SH);
         
         // test the bucket mask if the bucket is empty
-        if((bucketMask & (1L << bucket)) == 0l) {
+        if ((bucketMask & (1L << bucket)) == 0l) {
             
             // bucket is empty, add the free chunk to the list
             bucketStartAddr.putAddress(chunkPtr);
@@ -428,7 +429,7 @@ public final class LaxMalloc {
             bucketMask |= (1L << bucket);
             addrHeap(ADDR_HEAP_BUCKETS_FREE_MASK).putLong(bucketMask);
             
-        }else {
+        } else {
             
             // bucket is not empty, append to the bucket's existing free chunks list
             Address otherBucketStart = bucketStartAddr.getAddress();
@@ -454,7 +455,7 @@ public final class LaxMalloc {
     private static void unlinkChunkFromFreeList(Address chunkPtr, int chunkSize) {
         Address prevChunkPtr = readChunkPrevFreeAddr(chunkPtr);
         Address nextChunkPtr = readChunkNextFreeAddr(chunkPtr);
-        if(prevChunkPtr.toInt() == nextChunkPtr.toInt()) {
+        if (prevChunkPtr.toInt() == nextChunkPtr.toInt()) {
             // chunk is the only one currently in its bucket
             
             int chunkBucket = getListBucket(chunkSize - 8); // size - 2 ints
@@ -467,7 +468,7 @@ public final class LaxMalloc {
             bucketsFreeMask &= ~(1L << chunkBucket);
             addrHeap(ADDR_HEAP_BUCKETS_FREE_MASK).putLong(bucketsFreeMask);
             
-        }else {
+        } else {
             // there are other chunks in this bucket
             
             // link the next chunk to the previous chunk
@@ -480,19 +481,21 @@ public final class LaxMalloc {
             
             // chunk is the first in the bucket, so we also need to
             // update the bucket to point to the next chunk instead
-            if(bucketStartChunk.toInt() == chunkPtr.toInt()) {
+            if (bucketStartChunk.toInt() == chunkPtr.toInt()) {
                 bucketStartAddr.putAddress(nextChunkPtr);
             }
         }
     }
 
     /**
-     * https://github.com/emscripten-core/emscripten/blob/16a0bf174cb85f88b6d9dcc8ee7fbca59390185b/system/lib/emmalloc.c#L241
+     * https://github.com/emscripten-core/emscripten/blob/16a0bf174cb85f88b6d9dcc8ee7fbca59390185b/system/
+     * lib/emmalloc.c#L241
      * (MIT License)
      */
     private static int getListBucket(int allocSize) {
-        if (allocSize < 128)
+        if (allocSize < 128) {
             return (allocSize >> 3) - 1;
+        }
         
         int clz = Integer.numberOfLeadingZeros(allocSize);
         int bucketIndex = (clz > 19) ? 110 - (clz << 2) + ((allocSize >> (29 - clz)) ^ 4)
@@ -508,19 +511,19 @@ public final class LaxMalloc {
         Address heapInnerLimit = addrHeap(ADDR_HEAP_INNER_LIMIT).getAddress();
         Address heapOuterLimit = addrHeap(ADDR_HEAP_OUTER_LIMIT).getAddress();
         Address newHeapInnerLimit = heapInnerLimit.add(amount);
-        if(heapOuterLimit.isLessThan(newHeapInnerLimit)) {
+        if (heapOuterLimit.isLessThan(newHeapInnerLimit)) {
             int bytesNeeded = newHeapInnerLimit.toInt() - heapOuterLimit.toInt();
             bytesNeeded = (bytesNeeded + 0xFFFF) & 0xFFFF0000;
             Address newHeapOuterLimit = heapOuterLimit.add(bytesNeeded);
-            if(!getHeapMaxAddr().isLessThan(newHeapOuterLimit) && growHeapOuter(bytesNeeded >> 16) != -1) {
+            if (!getHeapMaxAddr().isLessThan(newHeapOuterLimit) && growHeapOuter(bytesNeeded >> 16) != -1) {
                 addrHeap(ADDR_HEAP_INNER_LIMIT).putAddress(newHeapInnerLimit);
                 addrHeap(ADDR_HEAP_OUTER_LIMIT).putAddress(newHeapOuterLimit);
                 notifyHeapResized();
                 return newHeapInnerLimit;
-            }else {
+            } else {
                 return Address.fromInt(0);
             }
-        }else {
+        } else {
             addrHeap(ADDR_HEAP_INNER_LIMIT).putAddress(newHeapInnerLimit);
             return newHeapInnerLimit;
         }
