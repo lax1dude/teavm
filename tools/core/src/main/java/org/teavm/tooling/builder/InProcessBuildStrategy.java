@@ -75,6 +75,7 @@ public class InProcessBuildStrategy implements BuildStrategy {
     private TeaVMToolLog log = new EmptyTeaVMToolLog();
     private boolean shortFileNames;
     private boolean assertionsRemoved;
+    private boolean directMallocSupport;
 
     @Override
     public void init() {
@@ -259,6 +260,11 @@ public class InProcessBuildStrategy implements BuildStrategy {
     }
 
     @Override
+    public void setDirectMallocSupport(boolean enable) {
+        this.directMallocSupport = enable;
+    }
+
+    @Override
     public BuildResult build() throws BuildException {
         TeaVMTool tool = new TeaVMTool();
         tool.setProgressListener(progressListener);
@@ -289,6 +295,7 @@ public class InProcessBuildStrategy implements BuildStrategy {
         tool.setWasmExceptionsUsed(wasmExceptionsUsed);
         tool.setWasmDebugInfoLevel(wasmDebugInfoLevel);
         tool.setWasmDebugInfoLocation(wasmDebugInfoLocation);
+        tool.setDirectMallocSupport(directMallocSupport);
         tool.setMinHeapSize(minHeapSize);
         tool.setMaxHeapSize(maxHeapSize);
         tool.setHeapDump(heapDump);

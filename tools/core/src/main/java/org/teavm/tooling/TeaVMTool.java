@@ -119,6 +119,7 @@ public class TeaVMTool {
     private Set<File> generatedFiles = new HashSet<>();
     private int minHeapSize = 4 * (1 << 20);
     private int maxHeapSize = 128 * (1 << 20);
+    private boolean directMallocSupport = false;
     private ReferenceCache referenceCache;
     private boolean heapDump;
     private boolean shortFileNames;
@@ -268,6 +269,10 @@ public class TeaVMTool {
         this.maxHeapSize = maxHeapSize;
     }
 
+    public void setDirectMallocSupport(boolean enableDirectMalloc) {
+        this.directMallocSupport = enableDirectMalloc;
+    }
+
     public ClassLoader getClassLoader() {
         return classLoader;
     }
@@ -410,6 +415,11 @@ public class TeaVMTool {
             wasmSourceMapWriter = new SourceMapBuilder();
             target.setSourceMapBuilder(wasmSourceMapWriter);
             target.setSourceMapLocation(getResolvedTargetFileName() + ".map");
+        }
+        if(directMallocSupport) {
+            target.setEnableDirectMallocSupport(directMallocSupport);
+            target.setDirectMallocMinHeapSize(minHeapSize);
+            target.setDirectMallocMaxHeapSize(maxHeapSize);
         }
         return target;
     }

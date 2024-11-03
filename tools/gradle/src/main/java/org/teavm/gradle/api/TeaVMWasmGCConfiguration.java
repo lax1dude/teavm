@@ -17,7 +17,7 @@ package org.teavm.gradle.api;
 
 import org.gradle.api.provider.Property;
 
-public interface TeaVMWasmGCConfiguration extends TeaVMCommonConfiguration, TeaVMWebConfiguration {
+public interface TeaVMWasmGCConfiguration extends TeaVMCommonConfiguration, TeaVMWebConfiguration, TeaVMNativeBaseConfiguration {
     Property<Boolean> getObfuscated();
 
     Property<Boolean> getStrict();
@@ -37,4 +37,6 @@ public interface TeaVMWasmGCConfiguration extends TeaVMCommonConfiguration, TeaV
     Property<SourceFilePolicy> getSourceFilePolicy();
 
     Property<Boolean> getModularRuntime();
+
+    Property<Boolean> getDirectMallocSupport();
 }

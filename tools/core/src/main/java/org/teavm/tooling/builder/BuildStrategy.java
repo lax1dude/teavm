@@ -89,6 +89,8 @@ public interface BuildStrategy {
 
     void setWasmDebugInfoLocation(WasmDebugInfoLocation wasmDebugInfoLocation);
 
+    void setDirectMallocSupport(boolean enable);
+
     void setMinHeapSize(int minHeapSize);
 
     void setMaxHeapSize(int maxHeapSize);

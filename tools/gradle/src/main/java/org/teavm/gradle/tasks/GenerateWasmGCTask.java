@@ -27,6 +27,8 @@ import org.teavm.tooling.TeaVMTargetType;
 import org.teavm.tooling.builder.BuildStrategy;
 
 public abstract class GenerateWasmGCTask extends TeaVMTask {
+    private static final int MB = 1024 * 1024;
+
     public GenerateWasmGCTask() {
         getStrict().convention(true);
         getObfuscated().convention(true);
@@ -58,6 +60,18 @@ public abstract class GenerateWasmGCTask extends TeaVMTask {
     @Optional
     public abstract Property<SourceFilePolicy> getSourceFilePolicy();
 
+    @Input
+    @Optional
+    public abstract Property<Boolean> getDirectMallocSupport();
+
+    @Input
+    @Optional
+    public abstract Property<Integer> getMinHeapSize();
+
+    @Input
+    @Optional
+    public abstract Property<Integer> getMaxHeapSize();
+
     @Override
     protected void setupBuilder(BuildStrategy builder) {
         builder.setStrict(getStrict().get());
@@ -83,5 +97,8 @@ public abstract class GenerateWasmGCTask extends TeaVMTask {
         builder.setTargetType(TeaVMTargetType.WEBASSEMBLY_GC);
         TaskUtils.applySourceFiles(getSourceFiles(), builder);
         TaskUtils.applySourceFilePolicy(getSourceFilePolicy(), builder);
+        builder.setDirectMallocSupport(getDirectMallocSupport().getOrElse(false));
+        builder.setMinHeapSize(getMinHeapSize().getOrElse(0) * MB);
+        builder.setMaxHeapSize(getMaxHeapSize().getOrElse(0) * MB);
     }
 }

@@ -215,6 +215,11 @@ public class RemoteBuildStrategy implements BuildStrategy {
     }
 
     @Override
+    public void setDirectMallocSupport(boolean enable) {
+        request.directMallocSupport = enable;
+    }
+
+    @Override
     public void setHeapDump(boolean heapDump) {
         request.heapDump = heapDump;
     }
