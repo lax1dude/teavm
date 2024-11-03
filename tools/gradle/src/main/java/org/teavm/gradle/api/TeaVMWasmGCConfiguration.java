@@ -17,7 +17,8 @@ package org.teavm.gradle.api;
 
 import org.gradle.api.provider.Property;
 
-public interface TeaVMWasmGCConfiguration extends TeaVMCommonConfiguration, TeaVMWebConfiguration, TeaVMNativeBaseConfiguration {
+public interface TeaVMWasmGCConfiguration extends TeaVMCommonConfiguration, TeaVMWebConfiguration,
+        TeaVMNativeBaseConfiguration {
     Property<Boolean> getObfuscated();
 
     Property<Boolean> getStrict();
