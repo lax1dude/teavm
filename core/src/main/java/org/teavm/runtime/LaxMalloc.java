@@ -173,7 +173,8 @@ public final class LaxMalloc {
             if (bucketMask != 0L) {
                 // there is a bucket with a larger chunk
                 int availableLargerBucket = Long.numberOfTrailingZeros(bucketMask);
-                Address largerBucketStartAddr = addrHeap(ADDR_HEAP_BUCKETS_START).add(availableLargerBucket << SIZEOF_PTR_SH);
+                Address largerBucketStartAddr = addrHeap(ADDR_HEAP_BUCKETS_START)
+                        .add(availableLargerBucket << SIZEOF_PTR_SH);
                 Address largerChunkPtr = largerBucketStartAddr.getAddress();
                 int largerChunkSize = readChunkSizeStatus(largerChunkPtr);
                 
@@ -279,7 +280,7 @@ public final class LaxMalloc {
                     Address ret = chunkPtr.add(4);
                     
                     // clear if requested
-                    if(cleared) {
+                    if (cleared) {
                         DirectMalloc.zmemset(ret, sizeBytes);
                     }
                     
@@ -418,7 +419,7 @@ public final class LaxMalloc {
         Address bucketStartAddr = addrHeap(ADDR_HEAP_BUCKETS_START).add(bucket << SIZEOF_PTR_SH);
         
         // test the bucket mask if the bucket is empty
-        if ((bucketMask & (1L << bucket)) == 0l) {
+        if ((bucketMask & (1L << bucket)) == 0L) {
             
             // bucket is empty, add the free chunk to the list
             bucketStartAddr.putAddress(chunkPtr);
@@ -426,7 +427,7 @@ public final class LaxMalloc {
             writeChunkNextFreeAddr(chunkPtr, chunkPtr);
             
             // set the free bit in bucket mask
-            bucketMask |= (1L << bucket);
+            bucketMask |= 1L << bucket;
             addrHeap(ADDR_HEAP_BUCKETS_FREE_MASK).putLong(bucketMask);
             
         } else {

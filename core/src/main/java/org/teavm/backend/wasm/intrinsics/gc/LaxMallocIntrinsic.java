@@ -17,7 +17,6 @@ package org.teavm.backend.wasm.intrinsics.gc;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.teavm.ast.InvocationExpr;
 import org.teavm.backend.wasm.model.expression.WasmExpression;
 import org.teavm.backend.wasm.model.expression.WasmInt32Constant;
@@ -72,12 +71,12 @@ public class LaxMallocIntrinsic implements WasmGCIntrinsic {
     }
 
     public void setHeapLocation(int heapLoc) {
-        for(LaxMallocHeapMapper mapper : addressList) {
+        for (LaxMallocHeapMapper mapper : addressList) {
             mapper.setHeapLocation(heapLoc);
         }
     }
 
-    private static interface LaxMallocHeapMapper {
+    private interface LaxMallocHeapMapper {
         void setHeapLocation(int heapLoc);
     }
 

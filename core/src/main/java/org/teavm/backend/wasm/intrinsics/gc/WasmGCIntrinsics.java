@@ -178,8 +178,10 @@ public class WasmGCIntrinsics implements WasmGCIntrinsicProvider {
         add(new MethodReference(DirectMalloc.class, "malloc", int.class, Address.class), intrinsic);
         add(new MethodReference(DirectMalloc.class, "calloc", int.class, Address.class), intrinsic);
         add(new MethodReference(DirectMalloc.class, "free", Address.class, void.class), intrinsic);
-        add(new MethodReference(DirectMalloc.class, "memcpy", Address.class, Address.class, int.class, void.class), intrinsic);
-        add(new MethodReference(DirectMalloc.class, "memset", Address.class, int.class, int.class, void.class), intrinsic);
+        add(new MethodReference(DirectMalloc.class, "memcpy", Address.class, Address.class, int.class, void.class),
+                intrinsic);
+        add(new MethodReference(DirectMalloc.class, "memset", Address.class, int.class, int.class, void.class),
+                intrinsic);
         add(new MethodReference(DirectMalloc.class, "zmemset", Address.class, int.class, void.class), intrinsic);
     }
 
