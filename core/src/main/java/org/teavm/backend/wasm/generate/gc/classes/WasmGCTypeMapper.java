@@ -128,9 +128,9 @@ public class WasmGCTypeMapper {
                 }
             }
             if (result == null) {
-                if(className.equals(Address.class.getName())) {
+                if (className.equals(Address.class.getName())) {
                     typeCache.put(className, WasmType.INT32);
-                }else {
+                } else {
                     var cls = classes.get(className);
                     if (cls == null) {
                         className = "java.lang.Object";

@@ -44,19 +44,32 @@ public final class LaxMalloc {
 
     private static final int MIN_ALLOC_SIZE = 8;
 
-    private static final int ADDR_HEAP_OUTER_LIMIT = 0; // Address where we store the WebAssembly.Memory limit (32 bit int)
-    private static final int ADDR_HEAP_INNER_LIMIT = 4; // Address where we store the current heap limit (32 bit int)
-    private static final int ADDR_HEAP_BUCKETS_FREE_MASK = 8; // Address where we store the bitmask of free chunk lists (64 bit int)
-    private static final int ADDR_HEAP_BUCKETS_START = 16; // Address to the list of 64 pointers to the beginnings of the 64 buckets
-    private static final int ADDR_HEAP_DATA_START = 272; // Beginning of the first chunk of the heap
+    // Address where we store the WebAssembly.Memory limit (32 bit int)
+    private static final int ADDR_HEAP_OUTER_LIMIT = 0;
 
-    private static native Address addrHeap(int offset); // Intrinsic function to get an address in the heap segment
+    // Address where we store the current heap limit (32 bit int)
+    private static final int ADDR_HEAP_INNER_LIMIT = 4;
 
-    private static native int growHeapOuter(int bytes); // Intrinsic function to grow the heap segment
+    // Address where we store the bitmask of free chunk lists (64 bit int)
+    private static final int ADDR_HEAP_BUCKETS_FREE_MASK = 8;
 
-    private static native Address getHeapMinAddr(); // Intrinsic function to get the minimum direct malloc heap segment ending address
+    // Address to the list of 64 pointers to the beginnings of the 64 buckets
+    private static final int ADDR_HEAP_BUCKETS_START = 16;
 
-    private static native Address getHeapMaxAddr(); // Intrinsic function to get the maximum direct malloc heap segment ending address
+    // Beginning of the first chunk of the heap
+    private static final int ADDR_HEAP_DATA_START = 272;
+
+    // Intrinsic function to get an address in the heap segment
+    private static native Address addrHeap(int offset);
+
+    // Intrinsic function to grow the heap segment
+    private static native int growHeapOuter(int bytes);
+
+    // Intrinsic function to get the minimum direct malloc heap segment ending address
+    private static native Address getHeapMinAddr();
+
+    // Intrinsic function to get the maximum direct malloc heap segment ending address
+    private static native Address getHeapMaxAddr();
 
     @Import(name = "teavm_notifyHeapResized")
     private static native void notifyHeapResized();
@@ -84,13 +97,13 @@ public final class LaxMalloc {
     }
 
     private static Address laxAlloc(int sizeBytes, boolean cleared) {
-        if(sizeBytes <= 0) {
+        if (sizeBytes <= 0) {
             // Produce a null pointer if 0 or invalid size is requested
             return Address.fromInt(0);
         }
         
         // Allocation must be large enough to hold the two list pointers when the chunk becomes free again
-        if(sizeBytes < MIN_ALLOC_SIZE) {
+        if (sizeBytes < MIN_ALLOC_SIZE) {
             sizeBytes = MIN_ALLOC_SIZE;
         }
         
@@ -100,7 +113,7 @@ public final class LaxMalloc {
         // always between 0-63
         int bucket = getListBucket(sizeBytes);
         
-        if(bucket == 63) {
+        if (bucket == 63) {
             // special bucket for the huge allocations
             // uses a different slower function
             return laxHugeAlloc(sizeBytes, cleared);
@@ -110,16 +123,16 @@ public final class LaxMalloc {
         long bucketMask = addrHeap(ADDR_HEAP_BUCKETS_FREE_MASK).getLong();
         
         // mask away the buckets that we know are too small for this allocation
-        bucketMask = (bucketMask & (0xFFFFFFFFFFFFFFFFL << bucket));
+        bucketMask = bucketMask & (0xFFFFFFFFFFFFFFFFL << bucket);
         
         // there are no more buckets with free chunks
         // need to sbrk
-        if(bucketMask == 0l) {
+        if (bucketMask == 0L) {
             int sizePlusInts = sizeBytes + 8; // size + 2 ints
             Address newChunk = growHeap(sizePlusInts); // sbrk
             
             // Out of memory
-            if(newChunk.toInt() == 0) {
+            if (newChunk.toInt() == 0) {
                 return Address.fromInt(0); //TODO
             }
             
@@ -142,22 +155,22 @@ public final class LaxMalloc {
         Address itrChunkStart = Address.fromInt(0);
         
         // check if the first chunk in the bucket is large enough
-        if(chunkSize - 8 < sizeBytes) { // size - 2 ints
+        if (chunkSize - 8 < sizeBytes) { // size - 2 ints
             
             // the chunk is not large enough, move the first chunk to the end of the list
             // and then check in the next bucket (where the chunks are definitely large enough)
             // this functionality is present in emmalloc (emscripten)
             
             Address chunkNextPtr = readChunkNextFreeAddr(chunkPtr);
-            if(chunkNextPtr.getInt() != chunkPtr.getInt()) {
+            if (chunkNextPtr.getInt() != chunkPtr.getInt()) {
                 bucketStartAddr.putAddress(chunkNextPtr);
                 itrChunkStart = chunkNextPtr;
             }
             
             // extend mask to the next bucket
-            bucketMask = (bucketMask & (0xFFFFFFFFFFFFFFFFL << (bucket + 1)));
+            bucketMask &= 0xFFFFFFFFFFFFFFFFL << (bucket + 1);
             
-            if(bucketMask != 0l) {
+            if (bucketMask != 0L) {
                 // there is a bucket with a larger chunk
                 int availableLargerBucket = Long.numberOfTrailingZeros(bucketMask);
                 Address largerBucketStartAddr = addrHeap(ADDR_HEAP_BUCKETS_START).add(availableLargerBucket << SIZEOF_PTR_SH);
@@ -171,13 +184,13 @@ public final class LaxMalloc {
                 Address ret = largerChunkPtr.add(4);
                 
                 // clear if requested
-                if(cleared) {
+                if (cleared) {
                     DirectMalloc.zmemset(ret, sizeBytes);
                 }
                 
                 return ret;
             }
-        }else {
+        } else {
             // the first chunk in the bucket is large enough
             // this will remove the chunk from the free list
             allocateMemoryFromChunk(chunkPtr, chunkSize, sizeBytes);
@@ -186,14 +199,14 @@ public final class LaxMalloc {
             Address ret = chunkPtr.add(4);
             
             // clear if requested
-            if(cleared) {
+            if (cleared) {
                 DirectMalloc.zmemset(ret, sizeBytes);
             }
             
             return ret;
         }
         
-        if(itrChunkStart.toInt() != 0) {
+        if (itrChunkStart.toInt() != 0) {
             
             // if we've reached this point, it means the first chunk in the bucket wasn't large enough
             // and there weren't any chunks in the larger buckets we could split up
@@ -220,7 +233,8 @@ public final class LaxMalloc {
                     
                     return ret;
                 }
-            }while((addrIterator = readChunkNextFreeAddr(addrIterator)).getInt() != chunkPtr.getInt());
+                addrIterator = readChunkNextFreeAddr(addrIterator);
+            } while (addrIterator.getInt() != chunkPtr.getInt());
         }
         
         // no other options, time to sbrk
@@ -229,7 +243,7 @@ public final class LaxMalloc {
         Address newChunk = growHeap(sizePlusInts); // sbrk
         
         // Out of memory
-        if(newChunk.toInt() == 0) {
+        if (newChunk.toInt() == 0) {
             return Address.fromInt(0); //TODO
         }
         

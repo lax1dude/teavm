@@ -37,17 +37,18 @@ public class LaxMallocIntrinsic implements WasmGCIntrinsic {
         switch (invocation.getMethod().getName()) {
             case "addrHeap": {
                 WasmExpression value = context.generate(invocation.getArguments().get(0));
-                if(value instanceof WasmInt32Constant) {
+                if (value instanceof WasmInt32Constant) {
                     // if addrHeap is passed a constant i32, add the heap offset at compile time
-                    final int memOffset = ((WasmInt32Constant)value).getValue();
+                    final int memOffset = ((WasmInt32Constant) value).getValue();
                     WasmInt32Constant ret = new WasmInt32Constant(0);
-                    addressList.add((heapLoc) -> {
+                    addressList.add(heapLoc -> {
                         ret.setValue(heapLoc + memOffset);
                     });
                     return ret;
-                }else {
+                } else {
                     WasmInt32Constant heapLocConst = new WasmInt32Constant(0);
-                    WasmExpression calcOffset = new WasmIntBinary(WasmIntType.INT32, WasmIntBinaryOperation.ADD, heapLocConst, value);
+                    WasmExpression calcOffset = new WasmIntBinary(WasmIntType.INT32, WasmIntBinaryOperation.ADD,
+                            heapLocConst, value);
                     addressList.add(heapLocConst::setValue);
                     return calcOffset;
                 }
@@ -81,13 +82,13 @@ public class LaxMallocIntrinsic implements WasmGCIntrinsic {
     }
 
     public void setHeapMinAddr(int heapSegmentMinAddr) {
-        for(WasmInt32Constant ct : minAddrConstants) {
+        for (WasmInt32Constant ct : minAddrConstants) {
             ct.setValue(heapSegmentMinAddr);
         }
     }
 
     public void setHeapMaxAddr(int heapSegmentMaxAddr) {
-        for(WasmInt32Constant ct : maxAddrConstants) {
+        for (WasmInt32Constant ct : maxAddrConstants) {
             ct.setValue(heapSegmentMaxAddr);
         }
     }
