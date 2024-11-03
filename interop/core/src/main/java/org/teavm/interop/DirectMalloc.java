@@ -26,7 +26,10 @@ package org.teavm.interop;
  * 
  * @author lax1dude
  */
-public class DirectMalloc {
+public final class DirectMalloc {
+
+    private DirectMalloc() {
+    }
 
     @UnsupportedOn({Platforms.JAVASCRIPT, Platforms.WEBASSEMBLY, Platforms.C})
     public static native Address malloc(int sizeBytes);

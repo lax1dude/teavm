@@ -36,6 +36,9 @@ public abstract class GenerateWasmGCTask extends TeaVMTask {
         getDebugInfoLocation().convention(WasmDebugInfoLocation.EXTERNAL);
         getSourceMap().convention(false);
         getSourceFilePolicy().convention(SourceFilePolicy.LINK_LOCAL_FILES);
+        getDirectMallocSupport().convention(false);
+        getMinHeapSize().convention(1);
+        getMaxHeapSize().convention(16);
     }
 
     @Input
@@ -98,7 +101,7 @@ public abstract class GenerateWasmGCTask extends TeaVMTask {
         TaskUtils.applySourceFiles(getSourceFiles(), builder);
         TaskUtils.applySourceFilePolicy(getSourceFilePolicy(), builder);
         builder.setDirectMallocSupport(getDirectMallocSupport().getOrElse(false));
-        builder.setMinHeapSize(getMinHeapSize().getOrElse(0) * MB);
-        builder.setMaxHeapSize(getMaxHeapSize().getOrElse(0) * MB);
+        builder.setMinHeapSize(getMinHeapSize().get() * MB);
+        builder.setMaxHeapSize(getMaxHeapSize().get() * MB);
     }
 }
