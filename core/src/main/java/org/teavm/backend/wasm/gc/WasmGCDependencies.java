@@ -131,6 +131,7 @@ public class WasmGCDependencies {
     }
 
     public void contributeDirectMalloc() {
+        analyzer.linkMethod(new MethodReference(LaxMalloc.class, "<clinit>", void.class)).use();
         analyzer.linkMethod(new MethodReference(LaxMalloc.class, "laxMalloc", int.class, Address.class)).use();
         analyzer.linkMethod(new MethodReference(LaxMalloc.class, "laxCalloc", int.class, Address.class)).use();
         analyzer.linkMethod(new MethodReference(LaxMalloc.class, "laxFree", Address.class, void.class)).use();

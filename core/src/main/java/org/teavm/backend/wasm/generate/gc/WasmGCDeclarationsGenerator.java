@@ -178,4 +178,8 @@ public class WasmGCDeclarationsGenerator {
     public void addToInitializer(Consumer<WasmFunction> contributor) {
         methodGenerator.getGenerationContext().addToInitializer(contributor);
     }
+
+    public void addEarlyInitializerContributor(WasmGCInitializerContributor contributor) {
+        initializerContributors.add(contributor);
+    }
 }

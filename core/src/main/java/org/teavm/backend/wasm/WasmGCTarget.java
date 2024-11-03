@@ -33,6 +33,7 @@ import org.teavm.backend.wasm.gc.TeaVMWasmGCHost;
 import org.teavm.backend.wasm.gc.WasmGCClassConsumer;
 import org.teavm.backend.wasm.gc.WasmGCClassConsumerContext;
 import org.teavm.backend.wasm.gc.WasmGCDependencies;
+import org.teavm.backend.wasm.generate.gc.LaxMallocInitializerContributor;
 import org.teavm.backend.wasm.generate.gc.WasmGCDeclarationsGenerator;
 import org.teavm.backend.wasm.generate.gc.WasmGCNameProvider;
 import org.teavm.backend.wasm.generate.gc.classes.WasmGCCustomTypeMapperFactory;
@@ -77,6 +78,7 @@ import org.teavm.model.transformation.BoundCheckInsertion;
 import org.teavm.model.transformation.NullCheckFilter;
 import org.teavm.model.transformation.NullCheckInsertion;
 import org.teavm.model.util.VariableCategoryProvider;
+import org.teavm.runtime.LaxMalloc;
 import org.teavm.vm.BuildTarget;
 import org.teavm.vm.TeaVMTarget;
 import org.teavm.vm.TeaVMTargetController;
@@ -301,6 +303,14 @@ public class WasmGCTarget implements TeaVMTarget, TeaVMWasmGCHost {
             refQueueSupplyFunction.setExportName("teavm.reportGarbageCollectedValue");
         }
 
+        if(enableDirectMallocSupport) {
+            var laxMallocClinitRef = new MethodReference(LaxMalloc.class, "<clinit>", void.class);
+            if (controller.getDependencyInfo().getMethod(laxMallocClinitRef) != null) {
+                var laxMallocClinit = declarationsGenerator.functions().forStaticMethod(laxMallocClinitRef);
+                declarationsGenerator.addEarlyInitializerContributor(new LaxMallocInitializerContributor(laxMallocClinit));
+            }
+        }
+
         moduleGenerator.generate();
         customGenerators.contributeToModule(module);
         generateExceptionExports(declarationsGenerator);
@@ -311,7 +321,7 @@ public class WasmGCTarget implements TeaVMTarget, TeaVMWasmGCHost {
                 heapSegment.setOffset(WasmRuntime.align(lastSegment.getOffset()
                         + lastSegment.getLength(), WasmHeap.PAGE_SIZE));
             }
-            heapSegment.setLength(directMallocMinHeapSize);
+            heapSegment.setLength(WasmHeap.PAGE_SIZE);
             module.getSegments().add(heapSegment);
             intrinsics.setupLaxMallocHeap(heapSegment.getOffset(), heapSegment.getOffset() + directMallocMinHeapSize,
                     heapSegment.getOffset() + directMallocMaxHeapSize);

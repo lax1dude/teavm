@@ -80,6 +80,9 @@ public final class LaxMalloc {
         // initialize heap limit
         addrHeap(ADDR_HEAP_INNER_LIMIT).putAddress(addrHeap(ADDR_HEAP_DATA_START));
         addrHeap(ADDR_HEAP_OUTER_LIMIT).putAddress(getHeapMinAddr());
+        
+        //TODO: Need to handle error setting the heap to its initial size
+        growHeapOuter(getHeapMinAddr().toInt() >> 16);
     }
 
     /**
