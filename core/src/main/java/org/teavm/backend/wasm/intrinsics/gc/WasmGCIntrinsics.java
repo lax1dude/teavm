@@ -187,9 +187,8 @@ public class WasmGCIntrinsics implements WasmGCIntrinsicProvider {
 
     private void fillLaxMalloc() {
         laxMallocIntrinsic = new LaxMallocIntrinsic();
-        add(new MethodReference(LaxMalloc.class, "laxMalloc", int.class, Address.class), laxMallocIntrinsic);
-        add(new MethodReference(LaxMalloc.class, "laxCalloc", int.class, Address.class), laxMallocIntrinsic);
-        add(new MethodReference(LaxMalloc.class, "laxFree", Address.class, void.class), laxMallocIntrinsic);
+        add(new MethodReference(LaxMalloc.class, "addrHeap", int.class, Address.class), laxMallocIntrinsic);
+        add(new MethodReference(LaxMalloc.class, "growHeapOuter", int.class, int.class), laxMallocIntrinsic);
         add(new MethodReference(LaxMalloc.class, "getHeapMinAddr", Address.class), laxMallocIntrinsic);
         add(new MethodReference(LaxMalloc.class, "getHeapMaxAddr", Address.class), laxMallocIntrinsic);
     }
