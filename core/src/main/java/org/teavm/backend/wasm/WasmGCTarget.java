@@ -74,6 +74,8 @@ import org.teavm.model.ListableClassHolderSource;
 import org.teavm.model.MethodReader;
 import org.teavm.model.MethodReference;
 import org.teavm.model.Program;
+import org.teavm.model.lowlevel.Characteristics;
+import org.teavm.model.lowlevel.LowLevelNullCheckFilter;
 import org.teavm.model.transformation.BoundCheckInsertion;
 import org.teavm.model.transformation.NullCheckFilter;
 import org.teavm.model.transformation.NullCheckInsertion;
@@ -86,7 +88,8 @@ import org.teavm.vm.spi.TeaVMHostExtension;
 
 public class WasmGCTarget implements TeaVMTarget, TeaVMWasmGCHost {
     private TeaVMTargetController controller;
-    private NullCheckInsertion nullCheckInsertion = new NullCheckInsertion(NullCheckFilter.EMPTY);
+    private Characteristics characteristics;
+    private NullCheckInsertion nullCheckInsertion;
     private BoundCheckInsertion boundCheckInsertion = new BoundCheckInsertion();
     private boolean strict;
     private boolean obfuscated;
@@ -179,6 +182,8 @@ public class WasmGCTarget implements TeaVMTarget, TeaVMWasmGCHost {
     @Override
     public void setController(TeaVMTargetController controller) {
         this.controller = controller;
+        characteristics = new Characteristics(controller.getUnprocessedClassSource());
+        nullCheckInsertion = new NullCheckInsertion(new LowLevelNullCheckFilter(characteristics));
     }
 
     @Override
@@ -267,6 +272,7 @@ public class WasmGCTarget implements TeaVMTarget, TeaVMWasmGCHost {
                 controller.getClassInitializerInfo(),
                 controller.getDependencyInfo(),
                 controller.getDiagnostics(),
+                characteristics,
                 customGenerators,
                 intrinsics,
                 customTypeMapperFactories,

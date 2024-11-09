@@ -61,6 +61,7 @@ import org.teavm.model.MethodReader;
 import org.teavm.model.MethodReference;
 import org.teavm.model.ValueType;
 import org.teavm.model.analysis.ClassInitializerInfo;
+import org.teavm.model.lowlevel.Characteristics;
 import org.teavm.model.util.RegisterAllocator;
 
 public class WasmGCMethodGenerator implements BaseWasmFunctionRepository {
@@ -74,6 +75,7 @@ public class WasmGCMethodGenerator implements BaseWasmFunctionRepository {
     private WasmGCSupertypeFunctionProvider supertypeFunctions;
     public final WasmGCNameProvider names;
     private Diagnostics diagnostics;
+    private Characteristics characteristics;
     private WasmGCTypeMapper typeMapper;
     private WasmGCCustomGeneratorProvider customGenerators;
     private WasmGCIntrinsicProvider intrinsics;
@@ -101,6 +103,7 @@ public class WasmGCMethodGenerator implements BaseWasmFunctionRepository {
             WasmFunctionTypes functionTypes,
             WasmGCNameProvider names,
             Diagnostics diagnostics,
+            Characteristics characteristics,
             WasmGCCustomGeneratorProvider customGenerators,
             WasmGCIntrinsicProvider intrinsics,
             boolean strict,
@@ -116,6 +119,7 @@ public class WasmGCMethodGenerator implements BaseWasmFunctionRepository {
         this.functionTypes = functionTypes;
         this.names = names;
         this.diagnostics = diagnostics;
+        this.characteristics = characteristics;
         this.customGenerators = customGenerators;
         this.intrinsics = intrinsics;
         this.strict = strict;
@@ -367,7 +371,8 @@ public class WasmGCMethodGenerator implements BaseWasmFunctionRepository {
                     strict,
                     entryPoint,
                     initializerContributors,
-                    diagnostics
+                    diagnostics,
+                    characteristics
             );
         }
         return context;

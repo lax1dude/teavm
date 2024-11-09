@@ -15,6 +15,8 @@
  */
 package org.teavm.backend.wasm.generate.gc.methods;
 
+import static org.teavm.model.lowlevel.ExceptionHandlingUtil.isManagedMethodCall;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -97,6 +99,7 @@ public class WasmGCGenerationVisitor extends BaseWasmGenerationVisitor {
     private WasmGCGenerationUtil generationUtil;
     private WasmType expectedType;
     private PreciseTypeInference types;
+    private boolean managed;
 
     public WasmGCGenerationVisitor(WasmGCGenerationContext context, MethodReference currentMethod,
             WasmFunction function, int firstVariable, boolean async, PreciseTypeInference types) {
@@ -104,6 +107,7 @@ public class WasmGCGenerationVisitor extends BaseWasmGenerationVisitor {
         this.context = context;
         generationUtil = new WasmGCGenerationUtil(context.classInfoProvider());
         this.types = types;
+        managed = context.characteristics().isManaged(currentMethod);
     }
 
     @Override
@@ -125,7 +129,7 @@ public class WasmGCGenerationVisitor extends BaseWasmGenerationVisitor {
 
     @Override
     protected boolean isManaged() {
-        return true;
+        return managed;
     }
 
     @Override
@@ -135,7 +139,7 @@ public class WasmGCGenerationVisitor extends BaseWasmGenerationVisitor {
 
     @Override
     protected boolean isManagedCall(MethodReference method) {
-        return false;
+        return isManagedMethodCall(context.characteristics(), method);
     }
 
     @Override

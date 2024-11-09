@@ -43,6 +43,7 @@ import org.teavm.model.ClassReaderSource;
 import org.teavm.model.ElementModifier;
 import org.teavm.model.ListableClassReaderSource;
 import org.teavm.model.MethodReference;
+import org.teavm.model.lowlevel.Characteristics;
 
 public class WasmGCGenerationContext implements BaseWasmGenerationContext {
     private WasmModule module;
@@ -69,6 +70,7 @@ public class WasmGCGenerationContext implements BaseWasmGenerationContext {
     private String entryPoint;
     private Consumer<WasmGCInitializerContributor> initializerContributors;
     private Diagnostics diagnostics;
+    private Characteristics characteristics;
 
     public WasmGCGenerationContext(WasmModule module, WasmGCVirtualTableProvider virtualTables,
             WasmGCTypeMapper typeMapper, WasmFunctionTypes functionTypes, ListableClassReaderSource classes,
@@ -78,7 +80,7 @@ public class WasmGCGenerationContext implements BaseWasmGenerationContext {
             WasmGCCustomGeneratorProvider customGenerators, WasmGCIntrinsicProvider intrinsics,
             WasmGCNameProvider names, boolean strict, String entryPoint,
             Consumer<WasmGCInitializerContributor> initializerContributors,
-            Diagnostics diagnostics) {
+            Diagnostics diagnostics, Characteristics characteristics) {
         this.module = module;
         this.virtualTables = virtualTables;
         this.typeMapper = typeMapper;
@@ -98,6 +100,7 @@ public class WasmGCGenerationContext implements BaseWasmGenerationContext {
         this.entryPoint = entryPoint;
         this.initializerContributors = initializerContributors;
         this.diagnostics = diagnostics;
+        this.characteristics = characteristics;
     }
 
     public WasmGCClassInfoProvider classInfoProvider() {
@@ -208,6 +211,10 @@ public class WasmGCGenerationContext implements BaseWasmGenerationContext {
 
     public Diagnostics diagnostics() {
         return diagnostics;
+    }
+
+    public Characteristics characteristics() {
+        return characteristics;
     }
 
     public Collection<String> getInterfaceImplementors(String className) {
