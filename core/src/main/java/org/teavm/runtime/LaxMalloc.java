@@ -231,7 +231,7 @@ public final class LaxMalloc {
                     allocateMemoryFromChunk(addrIterator, chunkSize, sizeBytes);
                     
                     // +4 bytes to skip size int
-                    Address ret = chunkPtr.add(4);
+                    Address ret = addrIterator.add(4);
                     
                     // clear if requested
                     if (cleared) {
