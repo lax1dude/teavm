@@ -335,7 +335,7 @@ public final class LaxMalloc {
         // set the chunk no longer in use
         chunkSize &= 0x7FFFFFFF;
         
-        if (addrHeap(ADDR_HEAP_DATA_START).isLessThan(chunkPtr)) {
+        if (!chunkPtr.isLessThan(addrHeap(ADDR_HEAP_DATA_START))) {
             // check if we can merge with the previous chunk, and move it to another bucket
             Address prevChunkPtr = chunkPtr.add(-(chunkPtr.add(-4).getInt()));
             int prevChunkSize = readChunkSizeStatus(prevChunkPtr);
@@ -353,7 +353,7 @@ public final class LaxMalloc {
         }
         
         Address nextChunkPtr = chunkPtr.add(chunkSize);
-        if (addrHeap(ADDR_HEAP_INNER_LIMIT).getAddress().isLessThan(nextChunkPtr)) {
+        if (nextChunkPtr.isLessThan(addrHeap(ADDR_HEAP_INNER_LIMIT).getAddress())) {
             // check if we can merge with the next chunk as well
             int nextChunkSize = readChunkSizeStatus(nextChunkPtr);
             if ((nextChunkSize & 0x80000000) == 0) {
