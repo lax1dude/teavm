@@ -63,7 +63,7 @@ public final class LaxMalloc {
     private static native Address addrHeap(int offset);
 
     // Intrinsic function to grow the heap segment
-    private static native int growHeapOuter(int bytes);
+    private static native int growHeapOuter(int chunks);
 
     // Intrinsic function to get the minimum direct malloc heap segment ending address
     private static native Address getHeapMinAddr();
@@ -81,8 +81,11 @@ public final class LaxMalloc {
         addrHeap(ADDR_HEAP_INNER_LIMIT).putAddress(addrHeap(ADDR_HEAP_DATA_START));
         addrHeap(ADDR_HEAP_OUTER_LIMIT).putAddress(getHeapMinAddr());
         
-        //TODO: Need to handle error setting the heap to its initial size
-        growHeapOuter(getHeapMinAddr().toInt() >> 16);
+        int initialGrowAmount = getHeapMinAddr().toInt() >>> 16 - 1;
+        if (initialGrowAmount > 0) {
+            //TODO: Need to handle error setting the heap to its initial size
+            growHeapOuter(initialGrowAmount);
+        }
     }
 
     /**
