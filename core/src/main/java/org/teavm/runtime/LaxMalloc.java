@@ -578,4 +578,24 @@ public final class LaxMalloc {
         return a < b ? a : b;
     }
 
+//    @Import(name = "dumpHeapHelper")
+//    private static native void dumpHeapHelper(Address chunkStart, Address chunkEnd, int size,
+//            int free, Address endAddr);
+//
+//    public static void heapDump() {
+//        Address curAddr = addrHeap(ADDR_HEAP_DATA_START);
+//        Address endAddr = addrHeap(ADDR_HEAP_INNER_LIMIT).getAddress();
+//        while (curAddr.isLessThan(endAddr)) {
+//            int sizeStat = readChunkSizeStatus(curAddr);
+//            int size = sizeStat & 0x7FFFFFFF;
+//            int stat = sizeStat >>> 31;
+//            dumpHeapHelper(curAddr, curAddr.add(size), size, stat, endAddr);
+//            if (size == 0) {
+//                //NOTE: size 0 would be a bug
+//                return;
+//            }
+//            curAddr = curAddr.add(size);
+//        }
+//    }
+
 }
