@@ -526,13 +526,13 @@ public final class LaxMalloc {
                 addrHeap(ADDR_HEAP_INNER_LIMIT).putAddress(newHeapInnerLimit);
                 addrHeap(ADDR_HEAP_OUTER_LIMIT).putAddress(newHeapOuterLimit);
                 notifyHeapResized();
-                return newHeapInnerLimit;
+                return heapInnerLimit;
             } else {
                 return Address.fromInt(0);
             }
         } else {
             addrHeap(ADDR_HEAP_INNER_LIMIT).putAddress(newHeapInnerLimit);
-            return newHeapInnerLimit;
+            return heapInnerLimit;
         }
     }
 
