@@ -335,20 +335,22 @@ public final class LaxMalloc {
         // set the chunk no longer in use
         chunkSize &= 0x7FFFFFFF;
         
-        if (!chunkPtr.isLessThan(addrHeap(ADDR_HEAP_DATA_START))) {
-            // check if we can merge with the previous chunk, and move it to another bucket
+        if (addrHeap(ADDR_HEAP_DATA_START).isLessThan(chunkPtr)) {
             Address prevChunkPtr = chunkPtr.add(-(chunkPtr.add(-4).getInt()));
-            int prevChunkSize = readChunkSizeStatus(prevChunkPtr);
-            if ((prevChunkSize & 0x80000000) == 0) {
-                // previous chunk is not in use, merge!
-                
-                // remove the previous chunk from its list
-                unlinkChunkFromFreeList(prevChunkPtr, prevChunkSize);
-                
-                // resize the current chunk to also contain the previous chunk
-                chunkPtr = prevChunkPtr;
-                chunkSize += prevChunkSize;
-                sizeChanged = true;
+            if (!prevChunkPtr.isLessThan(addrHeap(ADDR_HEAP_DATA_START))) {
+                // check if we can merge with the previous chunk, and move it to another bucket
+                int prevChunkSize = readChunkSizeStatus(prevChunkPtr);
+                if ((prevChunkSize & 0x80000000) == 0) {
+                    // previous chunk is not in use, merge!
+                    
+                    // remove the previous chunk from its list
+                    unlinkChunkFromFreeList(prevChunkPtr, prevChunkSize);
+                    
+                    // resize the current chunk to also contain the previous chunk
+                    chunkPtr = prevChunkPtr;
+                    chunkSize += prevChunkSize;
+                    sizeChanged = true;
+                }
             }
         }
         
@@ -522,7 +524,7 @@ public final class LaxMalloc {
             int bytesNeeded = newHeapInnerLimit.toInt() - heapOuterLimit.toInt();
             bytesNeeded = (bytesNeeded + 0xFFFF) & 0xFFFF0000;
             Address newHeapOuterLimit = heapOuterLimit.add(bytesNeeded);
-            if (!getHeapMaxAddr().isLessThan(newHeapOuterLimit) && growHeapOuter(bytesNeeded >> 16) != -1) {
+            if (!getHeapMaxAddr().isLessThan(newHeapOuterLimit) && growHeapOuter(bytesNeeded >>> 16) != -1) {
                 addrHeap(ADDR_HEAP_INNER_LIMIT).putAddress(newHeapInnerLimit);
                 addrHeap(ADDR_HEAP_OUTER_LIMIT).putAddress(newHeapOuterLimit);
                 notifyHeapResized();
