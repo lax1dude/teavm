@@ -439,8 +439,7 @@ public class WasmGCTarget implements TeaVMTarget, TeaVMWasmGCHost {
 
         if (enableDirectMallocSupport) {
             var minPages = (memorySize - 1) / WasmHeap.PAGE_SIZE + 1;
-            var maxPages = (memorySize - directMallocMinHeapSize + directMallocMaxHeapSize - 1)
-                    / WasmHeap.PAGE_SIZE + 1;
+            var maxPages = (memorySize + directMallocMaxHeapSize - WasmHeap.PAGE_SIZE - 1) / WasmHeap.PAGE_SIZE + 1;
             module.setMinMemorySize(minPages);
             module.setMaxMemorySize(maxPages);
         } else {
