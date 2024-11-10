@@ -71,7 +71,8 @@ public final class LaxMalloc {
     // Intrinsic function to get the maximum direct malloc heap segment ending address
     private static native Address getHeapMaxAddr();
 
-    @Import(name = "teavm_notifyHeapResized")
+    // Function called to resize the JavaScript typed arrays wrapping the WebAssembly.Memory
+    @Import(name = "notifyHeapResized")
     private static native void notifyHeapResized();
 
     static {
@@ -129,7 +130,7 @@ public final class LaxMalloc {
         long bucketMask = addrHeap(ADDR_HEAP_BUCKETS_FREE_MASK).getLong();
         
         // mask away the buckets that we know are too small for this allocation
-        bucketMask = bucketMask & (0xFFFFFFFFFFFFFFFFL << bucket);
+        bucketMask &= 0xFFFFFFFFFFFFFFFFL << bucket;
         
         // there are no more buckets with free chunks
         // need to sbrk
@@ -464,7 +465,7 @@ public final class LaxMalloc {
     private static void unlinkChunkFromFreeList(Address chunkPtr, int chunkSize) {
         Address prevChunkPtr = readChunkPrevFreeAddr(chunkPtr);
         Address nextChunkPtr = readChunkNextFreeAddr(chunkPtr);
-        if (prevChunkPtr.toInt() == nextChunkPtr.toInt()) {
+        if (prevChunkPtr.toInt() == chunkPtr.toInt() && nextChunkPtr.toInt() == chunkPtr.toInt()) {
             // chunk is the only one currently in its bucket
             
             int chunkBucket = getListBucket(chunkSize - 8); // size - 2 ints
