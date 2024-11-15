@@ -76,17 +76,19 @@ public final class LaxMalloc {
     private static native void notifyHeapResized();
 
     static {
+        int initialGrowAmount = getHeapMinAddr().toInt() >>> 16;
+        if (growHeapOuter(initialGrowAmount) == -1) {
+            initialGrowAmount = 1;
+            if (growHeapOuter(initialGrowAmount) == -1) {
+                //TODO: Handle failure to initialize fallback 64KiB heap
+            }
+        }
+        
         // zero out the control region
         DirectMalloc.zmemset(addrHeap(0), ADDR_HEAP_DATA_START);
         // initialize heap limit
         addrHeap(ADDR_HEAP_INNER_LIMIT).putAddress(addrHeap(ADDR_HEAP_DATA_START));
-        addrHeap(ADDR_HEAP_OUTER_LIMIT).putAddress(getHeapMinAddr());
-        
-        int initialGrowAmount = getHeapMinAddr().toInt() >>> 16 - 1;
-        if (initialGrowAmount > 0) {
-            //TODO: Need to handle error setting the heap to its initial size
-            growHeapOuter(initialGrowAmount);
-        }
+        addrHeap(ADDR_HEAP_OUTER_LIMIT).putAddress(addrHeap(initialGrowAmount << 16));
     }
 
     /**
@@ -136,7 +138,7 @@ public final class LaxMalloc {
         // need to sbrk
         if (bucketMask == 0L) {
             int sizePlusInts = sizeBytes + 8; // size + 2 ints
-            Address newChunk = growHeap(sizePlusInts); // sbrk
+            Address newChunk = growLastChunk(sizePlusInts);
             
             // Out of memory
             if (newChunk.toInt() == 0) {
@@ -248,7 +250,7 @@ public final class LaxMalloc {
         // no other options, time to sbrk
         
         int sizePlusInts = sizeBytes + 8; // size + 2 ints
-        Address newChunk = growHeap(sizePlusInts); // sbrk
+        Address newChunk = growLastChunk(sizePlusInts);
         
         // Out of memory
         if (newChunk.toInt() == 0) {
@@ -300,7 +302,7 @@ public final class LaxMalloc {
         // no free huge chunks found, time to sbrk
         
         int sizePlusInts = sizeBytes + 8; // size + 2 ints
-        Address newChunk = growHeap(sizePlusInts); // sbrk
+        Address newChunk = growLastChunk(sizePlusInts);
         
         // Out of memory
         if (newChunk.toInt() == 0) {
@@ -512,6 +514,46 @@ public final class LaxMalloc {
                 : min(71 - (clz << 1) + ((allocSize >> (30 - clz)) ^ 2), 63);
         
         return bucketIndex;
+    }
+
+    /**
+     * Removes the last chunk from the heap (if free), then grows the heap by amount minus
+     * the length of the last chunk, this shouldn't be called unless the program has failed
+     * to find a free chunk that is larger than the requested amount
+     */
+    private static Address growLastChunk(int amount) {
+        Address lastAddr = addrHeap(ADDR_HEAP_INNER_LIMIT).getAddress();
+        
+        // make sure it doesn't crash if the heap is empty
+        if (!addrHeap(ADDR_HEAP_DATA_START).isLessThan(lastAddr)) {
+            return growHeap(amount);
+        }
+        
+        // get the length and address of the last chunk 
+        int lastLen = lastAddr.add(-4).getInt();
+        Address lastChunk = lastAddr.add(-lastLen);
+        lastLen = lastChunk.getInt();
+        
+        // check if the last chunk is free
+        if ((lastLen & 0x80000000) == 0) {
+            
+            // chunk is free, attempt to resize the heap first
+            // so errors can be handled
+            if (growHeap(amount - lastLen).toInt() == 0) {
+                // out of memory
+                return Address.fromInt(0);
+            }
+            
+            // unlink last chunk from free list
+            unlinkChunkFromFreeList(lastChunk, lastLen);
+            
+            // return the start of the last chunk
+            return lastChunk;
+        } else {
+            // no free chunk at the end of the heap
+            // just grow the heap by the full amount
+            return growHeap(amount);
+        }
     }
 
     /**

@@ -321,16 +321,14 @@ public class WasmGCTarget implements TeaVMTarget, TeaVMWasmGCHost {
         customGenerators.contributeToModule(module);
         generateExceptionExports(declarationsGenerator);
         if (enableDirectMallocSupport) {
-            var heapSegment = new WasmMemorySegment();
+            var heapSegmentStart = 0;
             if (!module.getSegments().isEmpty()) {
                 var lastSegment = module.getSegments().get(module.getSegments().size() - 1);
-                heapSegment.setOffset(WasmRuntime.align(lastSegment.getOffset()
-                        + lastSegment.getLength(), WasmHeap.PAGE_SIZE));
+                heapSegmentStart = WasmRuntime.align(lastSegment.getOffset()
+                        + lastSegment.getLength(), WasmHeap.PAGE_SIZE);
             }
-            heapSegment.setLength(WasmHeap.PAGE_SIZE);
-            module.getSegments().add(heapSegment);
-            intrinsics.setupLaxMallocHeap(heapSegment.getOffset(), heapSegment.getOffset() + directMallocMinHeapSize,
-                    heapSegment.getOffset() + directMallocMaxHeapSize);
+            intrinsics.setupLaxMallocHeap(heapSegmentStart, heapSegmentStart + directMallocMinHeapSize,
+                    heapSegmentStart + directMallocMaxHeapSize);
         }
         adjustModuleMemory(module);
 
@@ -439,7 +437,7 @@ public class WasmGCTarget implements TeaVMTarget, TeaVMWasmGCHost {
 
         if (enableDirectMallocSupport) {
             var minPages = (memorySize - 1) / WasmHeap.PAGE_SIZE + 1;
-            var maxPages = (memorySize + directMallocMaxHeapSize - WasmHeap.PAGE_SIZE - 1) / WasmHeap.PAGE_SIZE + 1;
+            var maxPages = minPages + (directMallocMaxHeapSize - 1) / WasmHeap.PAGE_SIZE + 1;
             module.setMinMemorySize(minPages);
             module.setMaxMemorySize(maxPages);
         } else {
