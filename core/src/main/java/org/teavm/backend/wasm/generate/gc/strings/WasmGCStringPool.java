@@ -17,6 +17,7 @@ package org.teavm.backend.wasm.generate.gc.strings;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.teavm.backend.wasm.BaseWasmFunctionRepository;
 import org.teavm.backend.wasm.WasmFunctionTypes;
 import org.teavm.backend.wasm.generate.TemporaryVariablePool;
@@ -108,7 +109,7 @@ public class WasmGCStringPool implements WasmGCStringProvider, WasmGCInitializer
             module.functions.add(createStringPoolArray);
             var genUtil = new WasmGCGenerationUtil(null, new TemporaryVariablePool(createStringPoolArray));
             createStringPoolArray.getBody().add(genUtil.newFixedArraySafe(stringsArray, stringMap.values().stream()
-                    .map(str -> (WasmExpression) new WasmGetGlobal(str.global)).toList()));
+                    .map(str -> (WasmExpression) new WasmGetGlobal(str.global)).collect(Collectors.toList())));
             var array = new WasmCall(createStringPoolArray);
             function.getBody().add(new WasmCall(initStringsFunction, array));
         }
