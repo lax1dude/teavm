@@ -41,9 +41,6 @@ public class WasmGCGenerationUtil {
 
     public static final int MAX_FIXED_ARRAY_SIZE = 10000;
 
-    public WasmGCGenerationUtil(WasmGCClassInfoProvider classInfoProvider) {
-        
-    }
     public WasmGCGenerationUtil(WasmGCClassInfoProvider classInfoProvider, TemporaryVariablePool tmpVarPool) {
         this.classInfoProvider = classInfoProvider;
         this.tmpVarPool = tmpVarPool;
