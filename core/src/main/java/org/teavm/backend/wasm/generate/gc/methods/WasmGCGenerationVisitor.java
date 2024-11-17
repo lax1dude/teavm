@@ -102,7 +102,7 @@ public class WasmGCGenerationVisitor extends BaseWasmGenerationVisitor {
             WasmFunction function, int firstVariable, boolean async, PreciseTypeInference types) {
         super(context, currentMethod, function, firstVariable, async);
         this.context = context;
-        generationUtil = new WasmGCGenerationUtil(context.classInfoProvider());
+        generationUtil = new WasmGCGenerationUtil(context.classInfoProvider(), tempVars);
         this.types = types;
     }
 

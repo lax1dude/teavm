@@ -33,6 +33,7 @@ import org.teavm.backend.wasm.WasmFunctionTypes;
 import org.teavm.backend.wasm.gc.vtable.WasmGCVirtualTable;
 import org.teavm.backend.wasm.gc.vtable.WasmGCVirtualTableEntry;
 import org.teavm.backend.wasm.gc.vtable.WasmGCVirtualTableProvider;
+import org.teavm.backend.wasm.generate.TemporaryVariablePool;
 import org.teavm.backend.wasm.generate.gc.WasmGCInitializerContributor;
 import org.teavm.backend.wasm.generate.gc.WasmGCNameProvider;
 import org.teavm.backend.wasm.generate.gc.methods.WasmGCGenerationUtil;
@@ -1555,7 +1556,7 @@ public class WasmGCClassGenerator implements WasmGCClassInfoProvider, WasmGCInit
                     functionTypes.of(null)));
         }
 
-        var util = new WasmGCGenerationUtil(this);
+        var util = new WasmGCGenerationUtil(this, new TemporaryVariablePool(function));
         function.getBody().add(util.allocateArrayWithElements(ValueType.parse(Enum.class), () -> fields));
 
         return function;

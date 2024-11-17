@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Queue;
 import org.teavm.backend.wasm.WasmFunctionTypes;
+import org.teavm.backend.wasm.generate.TemporaryVariablePool;
 import org.teavm.backend.wasm.generate.gc.WasmGCNameProvider;
 import org.teavm.backend.wasm.generate.gc.methods.WasmGCGenerationUtil;
 import org.teavm.backend.wasm.model.WasmArray;
@@ -68,13 +69,13 @@ class WasmGCNewArrayFunctionGenerator {
         functionType.setFinal(true);
         functionType.getSupertypes().add(getNewArrayFunctionType());
         var function = new WasmFunction(functionType);
+        final var genUtil = new WasmGCGenerationUtil(classInfoProvider, new TemporaryVariablePool(function));
         function.setName(names.topLevel("Array<" + names.suggestForType(itemType) + ">@new"));
         module.functions.add(function);
 
         queue.add(() -> {
             var sizeLocal = new WasmLocal(WasmType.INT32, "length");
             function.add(sizeLocal);
-            var genUtil = new WasmGCGenerationUtil(classInfoProvider);
             var targetVar = new WasmLocal(classInfo.getType(), "result");
             function.add(targetVar);
             function.getBody().add(genUtil.allocateArray(itemType, () -> new WasmGetLocal(sizeLocal)));

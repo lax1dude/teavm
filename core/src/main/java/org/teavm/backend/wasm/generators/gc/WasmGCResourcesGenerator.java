@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Properties;
 import java.util.ServiceLoader;
+import org.teavm.backend.wasm.generate.TemporaryVariablePool;
 import org.teavm.backend.wasm.generate.gc.methods.WasmGCGenerationUtil;
 import org.teavm.backend.wasm.model.WasmFunction;
 import org.teavm.backend.wasm.model.WasmGlobal;
@@ -102,7 +103,7 @@ public class WasmGCResourcesGenerator implements WasmGCCustomGenerator {
                     WasmType.INT32, new WasmInt32Constant(0));
             context.module().globals.add(baseGlobal);
 
-            var genUtil = new WasmGCGenerationUtil(context.classInfoProvider());
+            var genUtil = new WasmGCGenerationUtil(context.classInfoProvider(), new TemporaryVariablePool(function));
             var constructor = context.functions().forStaticMethod(new MethodReference(WasmGCResources.class,
                     "create", String.class, int.class, int.class, WasmGCResources.Resource.class));
 

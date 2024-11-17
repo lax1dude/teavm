@@ -19,10 +19,12 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.teavm.backend.wasm.BaseWasmFunctionRepository;
 import org.teavm.backend.wasm.WasmFunctionTypes;
+import org.teavm.backend.wasm.generate.TemporaryVariablePool;
 import org.teavm.backend.wasm.generate.gc.WasmGCInitializerContributor;
 import org.teavm.backend.wasm.generate.gc.WasmGCNameProvider;
 import org.teavm.backend.wasm.generate.gc.classes.WasmGCClassInfoProvider;
 import org.teavm.backend.wasm.generate.gc.classes.WasmGCStandardClasses;
+import org.teavm.backend.wasm.generate.gc.methods.WasmGCGenerationUtil;
 import org.teavm.backend.wasm.model.WasmArray;
 import org.teavm.backend.wasm.model.WasmFunction;
 import org.teavm.backend.wasm.model.WasmGlobal;
@@ -37,6 +39,7 @@ import org.teavm.backend.wasm.model.expression.WasmBlock;
 import org.teavm.backend.wasm.model.expression.WasmBranch;
 import org.teavm.backend.wasm.model.expression.WasmCall;
 import org.teavm.backend.wasm.model.expression.WasmDrop;
+import org.teavm.backend.wasm.model.expression.WasmExpression;
 import org.teavm.backend.wasm.model.expression.WasmGetGlobal;
 import org.teavm.backend.wasm.model.expression.WasmGetLocal;
 import org.teavm.backend.wasm.model.expression.WasmInt32Constant;
@@ -93,11 +96,22 @@ public class WasmGCStringPool implements WasmGCStringProvider, WasmGCInitializer
                     void.class));
             function.getBody().add(new WasmCall(internInit));
         }
-        var array = new WasmArrayNewFixed(stringsArray);
-        for (var str : stringMap.values()) {
-            array.getElements().add(new WasmGetGlobal(str.global));
+        if (stringMap.size() < WasmGCGenerationUtil.MAX_FIXED_ARRAY_SIZE) {
+            var array = new WasmArrayNewFixed(stringsArray);
+            for (var str : stringMap.values()) {
+                array.getElements().add(new WasmGetGlobal(str.global));
+            }
+            function.getBody().add(new WasmCall(initStringsFunction, array));
+        } else {
+            var createStringPoolArray = new WasmFunction(functionTypes.of(stringsArray.getNonNullReference()));
+            createStringPoolArray.setName(names.topLevel("teavm@createStringPoolArray"));
+            module.functions.add(createStringPoolArray);
+            var genUtil = new WasmGCGenerationUtil(null, new TemporaryVariablePool(createStringPoolArray));
+            createStringPoolArray.getBody().add(genUtil.newFixedArraySafe(stringsArray, stringMap.values().stream()
+                    .map(str -> (WasmExpression) new WasmGetGlobal(str.global)).toList()));
+            var array = new WasmCall(createStringPoolArray);
+            function.getBody().add(new WasmCall(initStringsFunction, array));
         }
-        function.getBody().add(new WasmCall(initStringsFunction, array));
     }
 
     @Override
@@ -139,7 +153,7 @@ public class WasmGCStringPool implements WasmGCStringProvider, WasmGCInitializer
 
     private void createInitStringsFunction() {
         stringsArray = new WasmArray(names.topLevel("teavm@stringArray"),
-                standardClasses.stringClass().getStructure().getNonNullReference().asStorage());
+                standardClasses.stringClass().getStructure().getReference().asStorage());
         module.types.add(stringsArray);
         var function = new WasmFunction(functionTypes.of(null, stringsArray.getNonNullReference()));
         function.setName(names.topLevel("teavm@initStrings"));
@@ -174,7 +188,7 @@ public class WasmGCStringPool implements WasmGCStringProvider, WasmGCInitializer
         var stringTypeInfo = standardClasses.stringClass();
         var nextCharArrayFunction = functionProvider.forStaticMethod(new MethodReference(WasmGCSupport.class,
                 "nextCharArray", char[].class));
-        var function = new WasmFunction(functionTypes.of(null, stringTypeInfo.getStructure().getNonNullReference()));
+        var function = new WasmFunction(functionTypes.of(null, stringTypeInfo.getStructure().getReference()));
         function.setName(names.topLevel("teavm@initNextString"));
 
         var stringLocal = new WasmLocal(stringTypeInfo.getType());
