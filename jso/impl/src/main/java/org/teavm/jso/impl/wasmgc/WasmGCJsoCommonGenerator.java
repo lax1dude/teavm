@@ -352,14 +352,19 @@ class WasmGCJsoCommonGenerator {
             var fn = context.functions().forStaticMethod(aliasEntry.getValue());
             fn.setReferenced(true);
             if (isModule) {
-                var globalName = context.names().topLevel("teavm.js.export.function@" + aliasEntry.getKey());
-                var functionGlobal = new WasmGlobal(globalName, WasmType.Reference.EXTERN,
-                        new WasmNullConstant(WasmType.Reference.EXTERN));
-                functionGlobal.setExportName(aliasEntry.getKey());
-                context.module().globals.add(functionGlobal);
-                fn.setReferenced(true);
-                var exportedFn = new WasmCall(defineFunctionFunction(context), new WasmFunctionReference(fn));
-                expressions.add(new WasmSetGlobal(functionGlobal, exportedFn));
+                
+                // EAGLER HACK: make the entry point exported directly
+                fn.setExportName(aliasEntry.getKey());
+                
+                
+//                var globalName = context.names().topLevel("teavm.js.export.function@" + aliasEntry.getKey());
+//                var functionGlobal = new WasmGlobal(globalName, WasmType.Reference.EXTERN,
+//                        new WasmNullConstant(WasmType.Reference.EXTERN));
+//                functionGlobal.setExportName(aliasEntry.getKey());
+//                context.module().globals.add(functionGlobal);
+//                fn.setReferenced(true);
+//                var exportedFn = new WasmCall(defineFunctionFunction(context), new WasmFunctionReference(fn));
+//                expressions.add(new WasmSetGlobal(functionGlobal, exportedFn));
             }
             var methodName = context.strings().getStringConstant(aliasEntry.getKey());
             var jsMethodName = stringToJs(context, new WasmGetGlobal(methodName.global));
