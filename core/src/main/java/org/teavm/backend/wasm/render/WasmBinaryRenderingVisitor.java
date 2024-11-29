@@ -840,11 +840,15 @@ class WasmBinaryRenderingVisitor implements WasmExpressionVisitor {
                         if (expression.isReinterpret()) {
                             writer.writeByte(0xBC);
                         } else {
-                            writer.writeByte(expression.isSigned() ? 0xA8 : 0xA9);
+                            //eagler: replace trunc with trunc_sat
+                            writer.writeByte(0xFC);
+                            writer.writeByte(expression.isSigned() ? 0x00 : 0x01);
                         }
                         break;
                     case INT64:
-                        writer.writeByte(expression.isSigned() ? 0xAE : 0xAF);
+                        //eagler: replace trunc with trunc_sat
+                        writer.writeByte(0xFC);
+                        writer.writeByte(expression.isSigned() ? 0x04 : 0x05);
                         break;
                     case FLOAT32:
                         break;
@@ -856,13 +860,17 @@ class WasmBinaryRenderingVisitor implements WasmExpressionVisitor {
             case FLOAT64:
                 switch (expression.getTargetType()) {
                     case INT32:
-                        writer.writeByte(expression.isSigned() ? 0xAA : 0xAB);
+                        //eagler: replace trunc with trunc_sat
+                        writer.writeByte(0xFC);
+                        writer.writeByte(expression.isSigned() ? 0x02 : 0x03);
                         break;
                     case INT64:
                         if (expression.isReinterpret()) {
                             writer.writeByte(0xBD);
                         } else {
-                            writer.writeByte(expression.isSigned() ? 0xB0 : 0xB1);
+                            //eagler: replace trunc with trunc_sat
+                            writer.writeByte(0xFC);
+                            writer.writeByte(expression.isSigned() ? 0x06 : 0x07);
                         }
                         break;
                     case FLOAT32:
