@@ -16,6 +16,7 @@
 package org.teavm.runtime.heap;
 
 import org.teavm.interop.Address;
+import org.teavm.interop.Import;
 import org.teavm.interop.StaticInit;
 import org.teavm.interop.Structure;
 import org.teavm.interop.Unmanaged;
@@ -91,6 +92,8 @@ public final class Heap {
         var grownBytes = grow(bytes);
         if (grownBytes == 0) {
             return false;
+        } else {
+            notifyHeapResized();
         }
         currentSize += grownBytes;
         if (last != null) {
@@ -314,4 +317,8 @@ public final class Heap {
     }
 
     static native int grow(int bytes);
+
+    @Import(name = "notifyHeapResized")
+    static native void notifyHeapResized();
+
 }
