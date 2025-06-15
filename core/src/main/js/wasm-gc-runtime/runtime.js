@@ -206,6 +206,8 @@ function coreImports(imports, context) {
         },
         linearMemory() {
             return context.exports["teavm.memory"].buffer;
+        },
+        notifyHeapResized() {
         }
     };
 }
