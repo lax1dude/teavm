@@ -112,8 +112,7 @@ public class ClassGenerator implements Generator, Injector, DependencyPlugin {
             }
 
             ClassReader cls = agent.getClassSource().get(className);
-            method.getResult().propagate(agent.getType("[java/lang/Class;"));
-            method.getResult().getArrayItem().propagate(agent.getType("java/lang/Class;"));
+            method.getResult().propagate(agent.getType("[Ljava/lang/Class;"));
             if (cls != null) {
                 for (String iface : cls.getInterfaces()) {
                     method.getResult().getArrayItem().getClassValueNode().propagate(agent.getType(iface));

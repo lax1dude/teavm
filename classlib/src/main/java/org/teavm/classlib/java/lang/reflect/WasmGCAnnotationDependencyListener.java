@@ -41,7 +41,7 @@ public class WasmGCAnnotationDependencyListener extends BaseAnnotationDependency
         MethodReference methodRef = method.getMethod().getReference();
         if (methodRef.getClassName().equals("java.lang.Class")
                 && methodRef.getName().equals("getDeclaredAnnotationsImpl")) {
-            method.getResult().propagate(agent.getType("[" + Annotation.class.getName()));
+            method.getResult().propagate(agent.getType("[L" + Annotation.class.getName().replace('.', '/') + ";"));
             reachGetAnnotations(agent, method.getVariable(0), method.getResult().getArrayItem());
         }
     }
