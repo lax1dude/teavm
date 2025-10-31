@@ -92,6 +92,8 @@ public final class Heap {
         var grownBytes = grow(bytes);
         if (grownBytes == 0) {
             return false;
+        } else {
+            notifyHeapResized();
         }
         currentSize += grownBytes;
         if (!HeapRecord.isAllocated(last)) {
